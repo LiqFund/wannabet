@@ -2,8 +2,7 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TemplateType } from '@prisma/client';
-import { labelForTemplate } from '@/lib/types';
+import { labelForTemplate, TemplateType } from '@/lib/types';
 
 const defaultResolve = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
 
