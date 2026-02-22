@@ -9,18 +9,18 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#050509',
-        panel: '#0d1020',
-        neon: '#5cf9ff',
-        magenta: '#ff4dd9',
+        bg: '#020204',
+        panel: '#090c18',
+        neon: '#48d6dc',
+        magenta: '#dc44bc',
         gold: '#f4cf5b'
       },
       boxShadow: {
-        glow: '0 0 24px rgba(92,249,255,.35)',
-        magenta: '0 0 24px rgba(255,77,217,.25)'
+        glow: '0 0 24px rgba(72,214,220,.28)',
+        magenta: '0 0 24px rgba(220,68,188,.22)'
       },
       fontFamily: {
-        sans: ['var(--font-space-grotesk)'],
+        sans: ['var(--font-ibm-plex-sans)'],
         cursive: ['var(--font-kaushan-script)']
       }
     }

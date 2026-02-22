@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Kaushan_Script, Space_Grotesk } from 'next/font/google';
+import { IBM_Plex_Sans, Kaushan_Script } from 'next/font/google';
 import './globals.css';
 import { Nav } from '@/components/nav';
 import { Footer } from '@/components/footer';
 
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' });
+const ibmPlexSans = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--font-ibm-plex-sans' });
 const kaushanScript = Kaushan_Script({ subsets: ['latin'], weight: '400', variable: '--font-kaushan-script' });
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${kaushanScript.variable}`}>
+    <html lang="en" className={`${ibmPlexSans.variable} ${kaushanScript.variable}`}>
       <body>
         <Nav />
         <main className="mx-auto min-h-screen max-w-6xl px-4 py-10">{children}</main>
