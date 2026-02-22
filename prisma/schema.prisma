@@ -11,7 +11,7 @@ model Bet {
   id             String       @id @default(cuid())
   title          String
   description    String
-  templateType   String
+  templateType   TemplateType
   assetBase      String
   assetQuote     String
   threshold      Decimal?
@@ -31,6 +31,13 @@ model Bet {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   resolution     Resolution?
+}
+
+enum TemplateType {
+  PRICE_ABOVE_BELOW
+  PRICE_RANGE
+  SPORTS_WINNER
+  SPORTS_OU
 }
 
 model Resolution {

@@ -1,4 +1,6 @@
-export type TemplateType = 'PRICE_ABOVE_BELOW' | 'PRICE_RANGE' | 'SPORTS_WINNER' | 'SPORTS_OU';
+import { TemplateType } from '@prisma/client';
+
+export type { TemplateType };
 export type BetStatus = 'OPEN' | 'MATCHED' | 'RESOLVED';
 export type Outcome = 'CREATOR_WINS' | 'TAKER_WINS' | 'PUSH' | 'UNRESOLVED';
 
