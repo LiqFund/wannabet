@@ -1,11 +1,11 @@
 import { ImageResponse } from 'next/og';
-import { prisma } from '@/lib/prisma';
+import { getBetById } from '@/lib/betsCatalog';
 import { formatTemplate } from '@/lib/format';
 
 export const runtime = 'edge';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const bet = await prisma.bet.findUnique({ where: { id: params.id } });
+  const bet = getBetById(params.id);
 
   return new ImageResponse(
     (
