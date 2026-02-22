@@ -4,8 +4,8 @@
 
 :root {
   color-scheme: dark;
-  --font-ibm-plex-sans: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-kaushan-script: 'Brush Script MT', cursive;
+  --font-ibm-plex-sans: 'Avenir Next', 'SF Pro Display', 'Inter', 'Manrope', 'Segoe UI', sans-serif;
+  --font-kaushan-script: 'Snell Roundhand', 'Brush Script MT', 'Lucida Handwriting', cursive;
 }
 
 body {
