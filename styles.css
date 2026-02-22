@@ -1,0 +1,141 @@
+:root {
+  --bg: #0e1220;
+  --panel: #171d32;
+  --text: #f4f6ff;
+  --blue: #45a4ff;
+  --pink: #ff54b5;
+  --muted: #9ba6d3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Trebuchet MS', 'Arial', sans-serif;
+  color: var(--text);
+  background: radial-gradient(circle at top, #28345f 0, var(--bg) 45%);
+  min-height: 100vh;
+}
+
+.site-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.site-header {
+  background: rgba(23, 29, 50, 0.92);
+  border: 1px solid rgba(113, 132, 209, 0.35);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+}
+
+.brand-link {
+  text-decoration: none;
+  color: inherit;
+  display: inline-block;
+}
+
+.brand-main {
+  display: block;
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.brand-wanna {
+  color: var(--blue);
+  text-shadow: 0 0 12px rgba(69, 164, 255, 0.5);
+}
+
+.brand-bet {
+  color: var(--pink);
+  text-shadow: 0 0 12px rgba(255, 84, 181, 0.5);
+}
+
+.brand-subtitle {
+  display: inline-block;
+  color: #ffe2fb;
+  font-family: 'Brush Script MT', 'Lucida Handwriting', cursive;
+  font-size: 1.2rem;
+  margin-top: 0.1rem;
+  transform: rotate(-4deg) translateX(0.35rem);
+  transform-origin: left center;
+}
+
+.site-nav {
+  margin-left: auto;
+}
+
+.nav-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.nav-list a {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--text);
+  background: rgba(69, 164, 255, 0.15);
+  border: 1px solid rgba(69, 164, 255, 0.3);
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  transition: 180ms ease;
+}
+
+.nav-list a:hover,
+.nav-list a:focus-visible {
+  outline: none;
+  transform: translateY(-1px);
+  background: rgba(255, 84, 181, 0.2);
+  border-color: rgba(255, 84, 181, 0.45);
+}
+
+.header-error {
+  color: #ffd2ea;
+  margin: 0;
+}
+
+.hero {
+  margin-top: 1.3rem;
+  background: rgba(23, 29, 50, 0.84);
+  border-radius: 16px;
+  border: 1px solid rgba(113, 132, 209, 0.35);
+  padding: 2.1rem;
+}
+
+.hero h1 {
+  margin-top: 0;
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+.hero p {
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 65ch;
+}
+
+@media (max-width: 700px) {
+  .site-header {
+    flex-direction: column;
+  }
+
+  .nav-list {
+    justify-content: flex-start;
+  }
+}
