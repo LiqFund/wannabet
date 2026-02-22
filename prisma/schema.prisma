@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum TemplateType {
+  PRICE_ABOVE_BELOW
+  PRICE_RANGE
+  SPORTS_WINNER
+  SPORTS_OU
+}
+
+enum BetStatus {
+  OPEN
+  MATCHED
+  RESOLVED
+}
+
+enum Outcome {
+  CREATOR_WINS
+  TAKER_WINS
+  PUSH
+  UNRESOLVED
+}
+
+model Bet {
+  id             String       @id @default(cuid())
+  title          String
+  description    String
+  templateType   TemplateType
+  assetBase      String
+  assetQuote     String
+  threshold      Decimal?
+  lowerBound     Decimal?
+  upperBound     Decimal?
+  resolveAt      DateTime
+  stakePerSide   Decimal
+  currencyLabel  String
+  creatorAddress String
+  takerAddress   String?
+  status         BetStatus    @default(OPEN)
+  outcome        Outcome      @default(UNRESOLVED)
+  xCreatorHandle String?
+  xOpponentHandle String?
+  handlesPublic  Boolean      @default(false)
+  oracleSource   String       @default("Simulated oracle metadata")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  resolution     Resolution?
+}
+
+model Resolution {
+  id          String   @id @default(cuid())
+  betId       String   @unique
+  bet         Bet      @relation(fields: [betId], references: [id], onDelete: Cascade)
+  resolvedAt  DateTime
+  oracleValue Decimal?
+  notes       String
+}
