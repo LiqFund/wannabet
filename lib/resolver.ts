@@ -1,4 +1,4 @@
-import { Outcome, TemplateType } from '@prisma/client';
+import { Outcome, TemplateType } from '@/lib/types';
 
 const hashSeed = (input: string) => {
   let hash = 2166136261;

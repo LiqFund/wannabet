@@ -1,4 +1,5 @@
-import { BetStatus, PrismaClient, TemplateType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { BetStatus, TemplateType } from '../lib/types';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +14,7 @@ async function main() {
   await prisma.bet.deleteMany();
 
   for (let i = 1; i <= 10; i += 1) {
-    const type = i % 4 === 0 ? TemplateType.SPORTS_WINNER : i % 3 === 0 ? TemplateType.PRICE_RANGE : TemplateType.PRICE_ABOVE_BELOW;
+    const type: TemplateType = i % 4 === 0 ? 'SPORTS_WINNER' : i % 3 === 0 ? 'PRICE_RANGE' : 'PRICE_ABOVE_BELOW';
     const status: BetStatus = i % 5 === 0 ? 'RESOLVED' : i % 2 === 0 ? 'MATCHED' : 'OPEN';
 
     const bet = await prisma.bet.create({

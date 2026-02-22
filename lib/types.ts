@@ -1,4 +1,6 @@
-import { BetStatus, TemplateType } from '@prisma/client';
+export type TemplateType = 'PRICE_ABOVE_BELOW' | 'PRICE_RANGE' | 'SPORTS_WINNER' | 'SPORTS_OU';
+export type BetStatus = 'OPEN' | 'MATCHED' | 'RESOLVED';
+export type Outcome = 'CREATOR_WINS' | 'TAKER_WINS' | 'PUSH' | 'UNRESOLVED';
 
 export const statusOptions: BetStatus[] = ['OPEN', 'MATCHED', 'RESOLVED'];
 export const templateOptions: TemplateType[] = [

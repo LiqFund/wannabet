@@ -1,7 +1,7 @@
-import { BetStatus, Prisma, TemplateType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { BetCard } from '@/components/bet-card';
-import { labelForTemplate, statusOptions, templateOptions } from '@/lib/types';
+import { BetStatus, labelForTemplate, statusOptions, TemplateType, templateOptions } from '@/lib/types';
 
 export const metadata = {
   title: 'Browse bets | wannabet.you',
