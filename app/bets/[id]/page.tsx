@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { getBetById } from '@/lib/betsCatalog';
 import { formatDateUtc, formatTemplate, shortAddress } from '@/lib/format';
 import { HandleBadge } from '@/components/handle-badge';
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
-  const bet = await prisma.bet.findUnique({ where: { id: params.id } });
+  const bet = getBetById(params.id);
   if (!bet) return { title: 'Bet not found' };
   return {
     title: `${bet.title} | wannabet.you`,
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
 }
 
 export default async function BetDetailPage({ params }: { params: { id: string } }) {
-  const bet = await prisma.bet.findUnique({ where: { id: params.id }, include: { resolution: true } });
+  const bet = getBetById(params.id);
   if (!bet) notFound();
 
   return (
@@ -57,17 +57,9 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <li>Resolved: {bet.status === 'RESOLVED' ? formatDateUtc(bet.resolution?.resolvedAt ?? new Date()) : 'Pending'}</li>
           </ul>
           <div className="mt-4 space-y-2">
-            {bet.status === 'OPEN' ? (
-              <form action={`/api/bets/${bet.id}/take`} method="post" className="space-y-2">
-                <input required name="takerAddress" placeholder="Taker wallet address" className="w-full rounded bg-bg p-2 text-sm" />
-                <button className="rounded-full bg-neon/20 px-4 py-2 text-sm font-semibold text-neon">Take bet</button>
-              </form>
-            ) : null}
-            {bet.status === 'MATCHED' ? (
-              <form action={`/api/bets/${bet.id}/resolve`} method="post">
-                <button className="rounded-full bg-magenta/20 px-4 py-2 text-sm font-semibold text-magenta">Resolve (simulate)</button>
-              </form>
-            ) : null}
+            <p className="rounded-xl border border-white/10 bg-bg p-3 text-xs text-white/70">
+              Front-end demo mode: bet creation, taking, and resolution actions are disabled while backend services are offline.
+            </p>
             <p className="text-xs text-white/60">Simulated oracle in MVP. Deterministic output from bet id; replace with on-chain oracle call.</p>
           </div>
           {bet.resolution ? (

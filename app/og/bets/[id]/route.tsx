@@ -1,11 +1,11 @@
 import { ImageResponse } from 'next/og';
-import { prisma } from '@/lib/prisma';
+import { getBetById } from '@/lib/betsCatalog';
 import { formatTemplate } from '@/lib/format';
 
 export const runtime = 'edge';
 
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
-  const bet = await prisma.bet.findUnique({ where: { id: params.id } });
+  const bet = getBetById(params.id);
 
   return new ImageResponse(
     (
@@ -22,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
           border: '2px solid rgba(92,249,255,0.4)'
         }}
       >
-        <div style={{ fontSize: 30, letterSpacing: 4 }}>WANNABET</div>
+        <div style={{ fontSize: 30, letterSpacing: 4 }}>WANNA BET?</div>
         <div style={{ fontSize: 54, fontWeight: 800 }}>{bet?.title ?? 'Bet detail'}</div>
         <div style={{ fontSize: 28, color: '#5cf9ff' }}>{bet ? formatTemplate(bet) : 'Oracle-only escrow bets'}</div>
       </div>

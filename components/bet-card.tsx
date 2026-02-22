@@ -1,9 +1,9 @@
-import { Bet } from '@prisma/client';
+import { BetRecord } from '@/lib/betsCatalog';
 import Link from 'next/link';
 import { formatDateUtc, formatTemplate } from '@/lib/format';
 import { HandleBadge } from './handle-badge';
 
-type Props = { bet: Bet };
+type Props = { bet: BetRecord };
 
 export function BetCard({ bet }: Props) {
   const pot = Number(bet.stakePerSide) * 2;

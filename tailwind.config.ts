@@ -9,19 +9,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        bg: '#020204',
-        panel: '#090c18',
-        neon: '#48d6dc',
-        magenta: '#dc44bc',
-        gold: '#f4cf5b'
+        bg: '#0B0D10',
+        panel: '#111418',
+        neon: '#C6A75E',
+        magenta: '#B3122D',
+        gold: '#D7B76F'
       },
       boxShadow: {
-        glow: '0 0 24px rgba(72,214,220,.28)',
-        magenta: '0 0 24px rgba(220,68,188,.22)'
+        glow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(255,255,255,0.06)',
+        magenta: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(255,255,255,0.06)'
       },
       fontFamily: {
-        sans: ['var(--font-ibm-plex-sans)'],
-        cursive: ['var(--font-kaushan-script)']
+        sans: ['Avenir Next', 'SF Pro Display', 'Inter', 'Segoe UI', 'sans-serif'],
+        cursive: ['Kaushan Script', 'Brush Script MT', 'Lucida Handwriting', 'cursive']
       }
     }
   },
