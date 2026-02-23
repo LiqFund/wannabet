@@ -1,6 +1,5 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '@/lib/prisma';
 import { BetCard } from '@/components/bet-card';
+import { betsCatalog } from '@/lib/betsCatalog';
 import { BetStatus, labelForTemplate, statusOptions, TemplateType, templateOptions } from '@/lib/types';
 
 export const metadata = {
@@ -21,23 +20,23 @@ export default async function BetsPage({
     hasHandles?: string;
   };
 }) {
-  const where: Prisma.BetWhereInput = {};
+  const minStake = searchParams.minStake ? Number(searchParams.minStake) : null;
 
-  if (searchParams.status && statusOptions.includes(searchParams.status)) where.status = searchParams.status;
-  if (searchParams.templateType && templateOptions.includes(searchParams.templateType)) where.templateType = searchParams.templateType;
-  if (searchParams.minStake) where.stakePerSide = { gte: searchParams.minStake };
-  if (searchParams.hasHandles === 'true') {
-    where.handlesPublic = true;
-    where.OR = [{ xCreatorHandle: { not: null } }, { xOpponentHandle: { not: null } }];
-  }
-  if (searchParams.window && resolveWindowMap[searchParams.window]) {
-    const now = new Date();
-    const end = new Date();
-    end.setDate(now.getDate() + resolveWindowMap[searchParams.window]);
-    where.resolveAt = { gte: now, lte: end };
-  }
-
-  const bets = await prisma.bet.findMany({ where, orderBy: { createdAt: 'desc' } });
+  const bets = betsCatalog
+    .filter((bet) => {
+      if (searchParams.status && statusOptions.includes(searchParams.status) && bet.status !== searchParams.status) return false;
+      if (searchParams.templateType && templateOptions.includes(searchParams.templateType) && bet.templateType !== searchParams.templateType) return false;
+      if (minStake != null && !Number.isNaN(minStake) && bet.stakePerSide < minStake) return false;
+      if (searchParams.hasHandles === 'true' && !(bet.handlesPublic && (bet.xCreatorHandle || bet.xOpponentHandle))) return false;
+      if (searchParams.window && resolveWindowMap[searchParams.window]) {
+        const now = new Date();
+        const end = new Date();
+        end.setDate(now.getDate() + resolveWindowMap[searchParams.window]);
+        if (bet.resolveAt < now || bet.resolveAt > end) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return (
     <div className="space-y-6">

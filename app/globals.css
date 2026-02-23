@@ -8,6 +8,10 @@
 
 body {
   @apply bg-bg text-white antialiased;
-  background-image: radial-gradient(circle at 15% 10%, rgba(72, 214, 220, 0.09), transparent 30%),
-    radial-gradient(circle at 80% 5%, rgba(220, 68, 188, 0.08), transparent 40%);
+  font-family: 'Avenir Next', 'SF Pro Display', Inter, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }

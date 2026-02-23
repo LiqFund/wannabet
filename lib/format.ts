@@ -1,12 +1,12 @@
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import { Bet } from '@prisma/client';
+import { BetRecord } from '@/lib/betsCatalog';
 
 dayjs.extend(utc);
 
 export const formatDateUtc = (date: Date) => dayjs(date).utc().format('YYYY-MM-DD HH:mm [UTC]');
 
-export const formatTemplate = (bet: Bet) => {
+export const formatTemplate = (bet: BetRecord) => {
   switch (bet.templateType) {
     case 'PRICE_ABOVE_BELOW':
       return `${bet.assetBase}/${bet.assetQuote} > ${bet.threshold?.toString() ?? '-'} at ${formatDateUtc(bet.resolveAt)}`;

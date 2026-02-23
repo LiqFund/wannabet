@@ -1,13 +1,11 @@
 'use client';
 
 import { FormEvent, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { labelForTemplate, TemplateType } from '@/lib/types';
 
 const defaultResolve = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
 
 export default function CreatePage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     title: '',
@@ -40,14 +38,7 @@ export default function CreatePage() {
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const res = await fetch('/api/bets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
-    });
-    const data = await res.json();
-    if (res.ok) router.push(`/bets/${data.id}`);
-    setLoading(false);
+    window.setTimeout(() => setLoading(false), 400);
   };
 
   return (
@@ -95,7 +86,8 @@ export default function CreatePage() {
           <input type="checkbox" checked={form.handlesPublic} onChange={(e) => setForm({ ...form, handlesPublic: e.target.checked })} /> Publicly show handles
         </label>
 
-        <button disabled={loading} className="rounded-full bg-neon/20 px-5 py-3 font-semibold text-neon disabled:opacity-60">{loading ? 'Creating...' : 'Submit bet'}</button>
+        <button disabled={loading} className="rounded-full bg-neon/20 px-5 py-3 font-semibold text-neon disabled:opacity-60">{loading ? 'Saving draft...' : 'Save local draft'}</button>
+        <p className="text-xs text-white/60">Creation is currently front-end only. Submitted values are not persisted.</p>
       </form>
 
       <aside className="rounded-2xl border border-white/10 bg-panel p-5">

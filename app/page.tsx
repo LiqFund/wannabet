@@ -4,12 +4,12 @@ export default function HomePage() {
   return (
     <div className="space-y-14">
       <section className="rounded-3xl border border-white/10 bg-panel/80 p-8 shadow-glow md:p-12">
-        <p className="mb-3 inline-block rounded-full border border-neon/60 px-3 py-1 text-xs text-neon">oracle-only escrow</p>
+        <p className="mb-3 inline-block rounded-full border border-neon/60 px-3 py-1 text-xs text-neon">crypto-native escrow</p>
         <h1 className="max-w-3xl text-4xl font-black uppercase tracking-wide md:text-6xl">
-          Head-to-head bets settled by oracle templates, not moderators.
+          WANNA BET? Head to Head Betting
         </h1>
         <p className="mt-4 max-w-2xl text-white/75">
-          Create immutable 1v1 wager terms, match counterparties, and settle deterministically. No custody. No fiat rails.
+          Direct markets. Immutable terms. Oracle settlement.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/create" className="rounded-full bg-neon/20 px-5 py-3 font-semibold text-neon">Create a bet</Link>
