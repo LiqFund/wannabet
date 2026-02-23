@@ -45,7 +45,7 @@ export default function CreatePage() {
     <div className="grid gap-6 lg:grid-cols-3">
       <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-panel p-5 lg:col-span-2">
         <h1 className="text-3xl font-black">Create Bet</h1>
-        <p className="text-sm text-white/60">Oracle-only escrow contracts. No custody. For informational purposes. Jurisdiction restrictions may apply.</p>
+        <p className="text-sm text-white/60">Oracle-only escrow contracts. Non custodial. Jurisdiction restrictions may apply.</p>
 
         <input required placeholder="Bet title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full rounded bg-bg p-2" />
         <textarea required placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="h-24 w-full rounded bg-bg p-2" />
@@ -87,7 +87,7 @@ export default function CreatePage() {
         </label>
 
         <button disabled={loading} className="rounded-full bg-neon/20 px-5 py-3 font-semibold text-neon disabled:opacity-60">{loading ? 'Saving draft...' : 'Save local draft'}</button>
-        <p className="text-xs text-white/60">Creation is currently front-end only. Submitted values are not persisted.</p>
+        <p className="text-xs text-white/60"></p>
       </form>
 
       <aside className="rounded-2xl border border-white/10 bg-panel p-5">
