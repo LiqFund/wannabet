@@ -47,10 +47,10 @@ export default function HomePage() {
         <h2 className="text-2xl font-bold">How it works</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-4">
           {[
-            'Create oracle template',
+            'Create the bet',
             'Counterparty takes the bet',
-            'Resolve timestamp is reached',
-            'Oracle result determines winner'
+            'Oracle determines who won',
+            'Winner takes all'
           ].map((step, i) => (
             <div key={step} className="rounded-xl border border-white/10 bg-panel p-4">
               <p className="text-xs text-magenta">Step {i + 1}</p>
