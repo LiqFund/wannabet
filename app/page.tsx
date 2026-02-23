@@ -4,7 +4,7 @@ export default function HomePage() {
   return (
     <div className="space-y-14">
       <section className="rounded-3xl border border-white/10 bg-panel/80 p-8 shadow-glow md:p-12">
-        <p className="mb-3 inline-block rounded-full border border-neon/60 px-3 py-1 text-xs text-neon">crypto-native escrow</p>
+        
         <h1 className="max-w-3xl text-4xl font-black uppercase tracking-wide md:text-6xl">
           1v1 head to head Betting
         </h1>
