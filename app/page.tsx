@@ -6,7 +6,7 @@ export default function HomePage() {
       <section className="rounded-3xl border border-white/10 bg-panel/80 p-8 shadow-glow md:p-12">
         <p className="mb-3 inline-block rounded-full border border-neon/60 px-3 py-1 text-xs text-neon">crypto-native escrow</p>
         <h1 className="max-w-3xl text-4xl font-black uppercase tracking-wide md:text-6xl">
-          WANNA BET? Head to Head Betting
+          1v1 head to head Betting
         </h1>
         <p className="mt-4 max-w-2xl text-white/75">
           Put your money where your mouth is.
