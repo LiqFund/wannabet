@@ -18,12 +18,29 @@ export default function HomePage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {['Non-custodial escrow', 'Oracle settlement', '1v1 head-to-head', 'Immutable rules'].map((item) => (
-          <div key={item} className="rounded-2xl border border-white/10 bg-panel p-5">
-            <h3 className="font-semibold text-neon">{item}</h3>
-            <p className="mt-2 text-sm text-white/70">All betting funds are non-custodial in an escrow account, we do not hold anything.</p>
-          </div>
-        ))}
+        {[
+  {
+    title: 'Non-custodial escrow',
+    description: 'All betting funds are non-custodial in an escrow account, we do not hold anything.'
+  },
+  {
+    title: 'Oracle settlement',
+    description: 'Outcomes are resolved by verifiable oracle data.'
+  },
+  {
+    title: '1v1 head-to-head',
+    description: 'Peer to peer betting, put up or shut up.'
+  },
+  {
+    title: 'Immutable rules',
+    description: 'Terms are locked at creation and cannot be altered.'
+  }
+].map((item) => (
+  <div key={item.title} className="rounded-2xl border border-white/10 bg-panel p-5">
+    <h3 className="font-semibold text-neon">{item.title}</h3>
+    <p className="mt-2 text-sm text-white/70">{item.description}</p>
+  </div>
+))}
       </section>
 
       <section>
