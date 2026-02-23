@@ -4,14 +4,188 @@
 
 :root {
   color-scheme: dark;
+  --fight-bg: #070809;
+  --fight-bg-mid: #0d0f11;
+  --fight-panel: #111315;
+  --fight-panel-top: #16191c;
+  --fight-border: rgba(255, 255, 255, 0.09);
+  --fight-border-strong: rgba(255, 255, 255, 0.16);
+  --fight-gold: #d0b173;
+  --fight-red: #6f1a23;
+  --fight-red-strong: #89212d;
 }
 
 body {
-  @apply bg-bg text-white antialiased;
+  @apply text-white antialiased;
   font-family: 'Avenir Next', 'SF Pro Display', Inter, 'Segoe UI', sans-serif;
   font-weight: 500;
   letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #171a1e 0%, var(--fight-bg) 56%),
+    linear-gradient(180deg, #0a0c0e 0%, var(--fight-bg-mid) 48%, #060708 100%);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image:
+    radial-gradient(circle at 12% 24%, rgba(255, 255, 255, 0.7) 0 0.6px, transparent 0.7px),
+    radial-gradient(circle at 72% 58%, rgba(255, 255, 255, 0.5) 0 0.7px, transparent 0.8px),
+    radial-gradient(circle at 34% 83%, rgba(255, 255, 255, 0.7) 0 0.6px, transparent 0.7px);
+  background-size: 4px 4px, 5px 5px, 6px 6px;
+  z-index: -1;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    letter-spacing: 0.005em;
+    line-height: 1.13;
+  }
+
+  h1 {
+    font-weight: 900;
+    letter-spacing: -0.015em;
+  }
+
+  h2 {
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    letter-spacing: -0.005em;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 170ms;
+    transition-timing-function: ease;
+  }
+
+  input,
+  select,
+  textarea {
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background-color: rgba(8, 9, 11, 0.88);
+  }
+
+  input:hover,
+  select:hover,
+  textarea:hover {
+    border-color: rgba(111, 26, 35, 0.46);
+  }
+
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px rgba(208, 177, 115, 0.75), 0 0 0 3px rgba(111, 26, 35, 0.35);
+    border-color: rgba(208, 177, 115, 0.55);
+  }
+}
+
+@layer utilities {
+  .bg-panel,
+  .bg-panel\/80 {
+    background-color: color-mix(in srgb, var(--fight-panel) 88%, transparent);
+    background-image: linear-gradient(180deg, color-mix(in srgb, var(--fight-panel-top) 84%, transparent), color-mix(in srgb, var(--fight-panel) 92%, transparent));
+  }
+
+  .bg-bg {
+    background-color: color-mix(in srgb, #090a0b 96%, transparent);
+  }
+
+  .border-white\/10 {
+    border-color: var(--fight-border);
+  }
+
+  .border-white\/20 {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .text-neon,
+  .text-gold {
+    color: var(--fight-gold);
+  }
+
+  .text-magenta {
+    color: #8f2530;
+  }
+
+  .bg-neon\/20 {
+    background-color: rgba(208, 177, 115, 0.18);
+  }
+
+  .hover\:bg-neon\/30:hover {
+    background-color: rgba(208, 177, 115, 0.28);
+  }
+
+  .bg-magenta\/10 {
+    background-color: rgba(111, 26, 35, 0.18);
+  }
+
+  .border-magenta\/30,
+  .border-magenta\/60 {
+    border-color: rgba(111, 26, 35, 0.5);
+  }
+
+  .rounded-3xl,
+  .rounded-2xl {
+    border-radius: 0.7rem;
+  }
+
+  .rounded-xl,
+  .rounded-full {
+    border-radius: 0.5rem;
+  }
+
+  article.rounded-2xl,
+  section.rounded-2xl,
+  aside.rounded-2xl,
+  div.rounded-2xl,
+  form.rounded-2xl {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.018), 0 0 0 1px rgba(255, 255, 255, 0.04), 0 12px 24px rgba(0, 0, 0, 0.42);
+  }
+
+  article.rounded-2xl:hover,
+  section.rounded-2xl:hover,
+  aside.rounded-2xl:hover,
+  div.rounded-2xl:hover {
+    transform: translateY(-2px);
+    border-color: var(--fight-border-strong);
+  }
+
+  button:hover,
+  a[class*='bg-neon']:hover {
+    border-color: rgba(208, 177, 115, 0.38);
+    background-color: rgba(208, 177, 115, 0.25);
+  }
+
+  nav a:hover,
+  footer a:hover,
+  a[class*='border']:hover {
+    color: #cbb078;
+    border-color: rgba(111, 26, 35, 0.55);
+  }
+
+  p.text-xs.text-magenta {
+    color: #8f2530;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
 }

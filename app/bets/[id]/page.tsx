@@ -22,8 +22,8 @@ export default async function BetDetailPage({ params }: { params: { id: string }
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-white/10 bg-panel p-6">
-        <h1 className="text-3xl font-black">{bet.title}</h1>
+      <div className="rounded-lg border border-white/15 bg-panel/95 p-6 shadow-glow">
+        <h1 className="text-3xl font-black tracking-tight">{bet.title}</h1>
         <p className="mt-2 text-white/75">{bet.description}</p>
         {bet.handlesPublic && (bet.xCreatorHandle || bet.xOpponentHandle) ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -35,8 +35,8 @@ export default async function BetDetailPage({ params }: { params: { id: string }
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <section className="rounded-2xl border border-white/10 bg-panel p-5">
-          <h2 className="font-semibold text-neon">Bet details</h2>
+        <section className="rounded-lg border border-white/15 bg-panel/95 p-5 shadow-magenta transition hover:-translate-y-0.5 hover:border-white/20">
+          <h2 className="font-semibold tracking-tight text-neon">Bet details</h2>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>Template: {formatTemplate(bet)}</li>
             <li>Stake / side: {bet.stakePerSide.toString()} {bet.currencyLabel}</li>
@@ -45,11 +45,11 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <li>Taker: {bet.takerAddress ? shortAddress(bet.takerAddress) : 'Unfilled'}</li>
             <li>Oracle source: {bet.oracleSource}</li>
           </ul>
-          <p className="mt-4 rounded-xl border border-magenta/30 bg-magenta/10 p-3 text-xs text-magenta">Rules are immutable once bet is created.</p>
+          <p className="mt-4 rounded-md border border-magenta/40 bg-magenta/10 p-3 text-xs font-medium tracking-wide text-magenta">Rules are immutable once bet is created.</p>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-panel p-5">
-          <h2 className="font-semibold text-neon">Timeline</h2>
+        <section className="rounded-lg border border-white/15 bg-panel/95 p-5 shadow-magenta transition hover:-translate-y-0.5 hover:border-white/20">
+          <h2 className="font-semibold tracking-tight text-neon">Timeline</h2>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>Created: {formatDateUtc(bet.createdAt)}</li>
             <li>Matched: {bet.status !== 'OPEN' ? 'Yes' : 'Pending'}</li>
@@ -57,7 +57,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <li>Resolved: {bet.status === 'RESOLVED' ? formatDateUtc(bet.resolution?.resolvedAt ?? new Date()) : 'Pending'}</li>
           </ul>
           <div className="mt-4 space-y-2">
-            <p className="rounded-xl border border-white/10 bg-bg p-3 text-xs text-white/70">
+            <p className="rounded-md border border-white/15 bg-bg p-3 text-xs text-white/70">
               Front-end demo mode: bet creation, taking, and resolution actions are disabled while backend services are offline.
             </p>
             <p className="text-xs text-white/60">Simulated oracle in MVP. Deterministic output from bet id; replace with on-chain oracle call.</p>

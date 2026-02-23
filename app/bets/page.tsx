@@ -40,18 +40,18 @@ export default async function BetsPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-black">Browse Bets</h1>
-      <form className="grid gap-3 rounded-2xl border border-white/10 bg-panel p-4 md:grid-cols-5">
-        <select name="status" defaultValue={searchParams.status ?? ''} className="rounded bg-bg p-2 text-sm">
+      <h1 className="text-3xl font-black tracking-tight">Browse Bets</h1>
+      <form className="grid gap-3 rounded-lg border border-white/15 bg-panel/95 p-4 shadow-glow md:grid-cols-5">
+        <select name="status" defaultValue={searchParams.status ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
           <option value="">All statuses</option>
           {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select name="templateType" defaultValue={searchParams.templateType ?? ''} className="rounded bg-bg p-2 text-sm">
+        <select name="templateType" defaultValue={searchParams.templateType ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
           <option value="">All templates</option>
           {templateOptions.map((t) => <option key={t} value={t}>{labelForTemplate[t]}</option>)}
         </select>
-        <input name="minStake" type="number" step="0.01" min="0" defaultValue={searchParams.minStake ?? ''} placeholder="Min stake" className="rounded bg-bg p-2 text-sm" />
-        <select name="window" defaultValue={searchParams.window ?? ''} className="rounded bg-bg p-2 text-sm">
+        <input name="minStake" type="number" step="0.01" min="0" defaultValue={searchParams.minStake ?? ''} placeholder="Min stake" className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45" />
+        <select name="window" defaultValue={searchParams.window ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
           <option value="">Any resolve time</option>
           <option value="24h">Next 24h</option>
           <option value="7d">Next 7d</option>
@@ -60,7 +60,7 @@ export default async function BetsPage({
         <label className="flex items-center gap-2 text-sm">
           <input name="hasHandles" type="checkbox" value="true" defaultChecked={searchParams.hasHandles === 'true'} /> Has handles
         </label>
-        <button className="rounded-full bg-neon/20 px-4 py-2 text-neon md:col-span-5 md:justify-self-start">Apply filters</button>
+        <button className="rounded-md border border-neon/30 bg-neon/20 px-4 py-2 font-semibold text-neon hover:bg-neon/30 hover:border-neon/50 md:col-span-5 md:justify-self-start">Apply filters</button>
       </form>
 
       <div className="grid gap-4 md:grid-cols-2">
