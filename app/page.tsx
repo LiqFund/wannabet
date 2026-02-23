@@ -9,7 +9,7 @@ export default function HomePage() {
           WANNA BET? Head to Head Betting
         </h1>
         <p className="mt-4 max-w-2xl text-white/75">
-          Direct markets. Immutable terms. Oracle settlement.
+          Put your money where your mouth is.
         </p>
         <div className="mt-7 flex flex-wrap gap-3">
           <Link href="/create" className="rounded-full bg-neon/20 px-5 py-3 font-semibold text-neon">Create a bet</Link>
@@ -21,7 +21,7 @@ export default function HomePage() {
         {['Non-custodial escrow', 'Oracle settlement', '1v1 head-to-head', 'Immutable rules'].map((item) => (
           <div key={item} className="rounded-2xl border border-white/10 bg-panel p-5">
             <h3 className="font-semibold text-neon">{item}</h3>
-            <p className="mt-2 text-sm text-white/70">Purpose-built templates enforce deterministic outcomes for clean settlement.</p>
+            <p className="mt-2 text-sm text-white/70">All betting funds are non-custodial in an escrow account, we don't hold anything.</p>
           </div>
         ))}
       </section>
