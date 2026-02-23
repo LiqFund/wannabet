@@ -5,11 +5,11 @@ import { Footer } from '@/components/footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: 'wannabet.you | Oracle-only escrow bets',
-  description: 'Peer-to-peer oracle-only escrow bet templates with immutable rules.',
+  title: 'Wanna Bet? - Head to head betting.',
+  description: 'Put your money where your mouth is. Head to head bets with immutable terms and oracle settlement. Winner takes all.',
   openGraph: {
     title: 'wannabet.you',
-    description: 'Non-custodial oracle-only escrow bets.',
+    description: '1v1 head to head betting. Winner takes all. Wanna bet?',
     type: 'website'
   }
 };
