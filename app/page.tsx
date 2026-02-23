@@ -1,171 +1,235 @@
 import Link from 'next/link';
 
-const liveChallenges = [
+type Market = {
+  title: string;
+  subtitle: string;
+  volume: string;
+  chance: string;
+  yesPrice: string;
+  noPrice: string;
+  closes: string;
+  trend: 'up' | 'down' | 'flat';
+};
+
+const primaryCategories = ['Finance', 'Sports'];
+
+const quickFilters = ['Trending', 'Breaking', 'New', 'Ending Soon', 'Most Volume', 'Big Movers'];
+
+const markets: Market[] = [
   {
-    challenger: '@ALPHA',
-    opponent: '@BETA',
-    stake: '$50,000',
-    condition: 'BTC > 100K by Friday',
-    remaining: '12h 32m'
+    title: 'BTC above $95k by Friday close?',
+    subtitle: 'Crypto',
+    volume: '$4.2M Vol',
+    chance: '51%',
+    yesPrice: '51¢',
+    noPrice: '49¢',
+    closes: 'Closes in 1d',
+    trend: 'down'
   },
   {
-    challenger: '@NOVA',
-    opponent: '@RIFT',
-    stake: '$18,500',
-    condition: 'ETH closes green this week',
-    remaining: '9h 11m'
+    title: 'S&P 500 closes above 6,200 before quarter end?',
+    subtitle: 'Equities',
+    volume: '$2.7M Vol',
+    chance: '7%',
+    yesPrice: '7¢',
+    noPrice: '93¢',
+    closes: 'Closes in 24d',
+    trend: 'flat'
   },
   {
-    challenger: '@KANE',
-    opponent: '@LYNX',
-    stake: '$72,000',
-    condition: 'SOL flips BNB market cap',
-    remaining: '1d 4h'
+    title: 'US inflation print below 2.8% next release?',
+    subtitle: 'Macro',
+    volume: '$2.1M Vol',
+    chance: '55%',
+    yesPrice: '55¢',
+    noPrice: '45¢',
+    closes: 'Closes in 11d',
+    trend: 'up'
   },
   {
-    challenger: '@VECTOR',
-    opponent: '@ECHO',
-    stake: '$12,000',
-    condition: 'Nasdaq ends above 19,000',
-    remaining: '6h 48m'
+    title: 'Will Ethereum ETF inflows top $1B this month?',
+    subtitle: 'Crypto ETFs',
+    volume: '$1.8M Vol',
+    chance: '35%',
+    yesPrice: '35¢',
+    noPrice: '65¢',
+    closes: 'Closes in 10d',
+    trend: 'down'
   },
   {
-    challenger: '@ONYX',
-    opponent: '@QUILL',
-    stake: '$95,000',
-    condition: 'Gold touches 2,600 this month',
-    remaining: '2d 8h'
+    title: 'Will the Euro outperform USD this month?',
+    subtitle: 'FX Markets',
+    volume: '$398k Vol',
+    chance: '49%',
+    yesPrice: '49¢',
+    noPrice: '51¢',
+    closes: 'Closes in 8d',
+    trend: 'flat'
   },
   {
-    challenger: '@MERC',
-    opponent: '@ZED',
-    stake: '$31,750',
-    condition: 'Fed holds rates this meeting',
-    remaining: '14h 05m'
+    title: 'Gold touches $2,600 before month end?',
+    subtitle: 'Commodities',
+    volume: '$1.1M Vol',
+    chance: '33%',
+    yesPrice: '33¢',
+    noPrice: '67¢',
+    closes: 'Closes in 13d',
+    trend: 'up'
   },
   {
-    challenger: '@TORCH',
-    opponent: '@FABLE',
-    stake: '$44,000',
-    condition: 'Oil stays above 90 all week',
-    remaining: '20h 19m'
+    title: 'Premier League winner confirmed by March 31?',
+    subtitle: 'Football',
+    volume: '$672k Vol',
+    chance: '21%',
+    yesPrice: '21¢',
+    noPrice: '79¢',
+    closes: 'Closes in 18d',
+    trend: 'down'
   },
   {
-    challenger: '@RUNE',
-    opponent: '@PHOENIX',
-    stake: '$26,250',
-    condition: 'S&P closes above 6,000 Friday',
-    remaining: '1d 1h'
+    title: 'NCAA upset in top 10 this weekend?',
+    subtitle: 'College Sports',
+    volume: '$153k Vol',
+    chance: '34%',
+    yesPrice: '34¢',
+    noPrice: '66¢',
+    closes: 'Closes in 2d',
+    trend: 'down'
+  },
+  {
+    title: 'Everton to score 2+ goals this match?',
+    subtitle: 'Football',
+    volume: '$214k Vol',
+    chance: '25%',
+    yesPrice: '25¢',
+    noPrice: '75¢',
+    closes: 'Closes in 7h',
+    trend: 'up'
+  },
+  {
+    title: 'Lakers cover -4.5 in next game?',
+    subtitle: 'Basketball',
+    volume: '$591k Vol',
+    chance: '58%',
+    yesPrice: '58¢',
+    noPrice: '42¢',
+    closes: 'Closes in 9h',
+    trend: 'flat'
+  },
+  {
+    title: 'Djokovic reaches final this tournament?',
+    subtitle: 'Tennis',
+    volume: '$316k Vol',
+    chance: '47%',
+    yesPrice: '47¢',
+    noPrice: '53¢',
+    closes: 'Closes in 3d',
+    trend: 'up'
+  },
+  {
+    title: 'Chiefs win by 7+ next game?',
+    subtitle: 'American Football',
+    volume: '$903k Vol',
+    chance: '41%',
+    yesPrice: '41¢',
+    noPrice: '59¢',
+    closes: 'Closes in 5d',
+    trend: 'flat'
   }
 ];
 
-const ringRules = [
-  {
-    title: 'NON-CUSTODIAL ESCROW',
-    description: 'All betting funds are non-custodial in an escrow account, we do not hold anything.'
-  },
-  {
-    title: 'ORACLE SETTLEMENT',
-    description: 'Outcomes are resolved by verifiable oracle data.'
-  },
-  {
-    title: '1V1 HEAD-TO-HEAD',
-    description: 'Peer to peer betting, put up or shut up.'
-  },
-  {
-    title: 'IMMUTABLE RULES',
-    description: 'Terms are locked at creation and cannot be altered.'
-  }
-];
+function trendClasses(trend: Market['trend']) {
+  if (trend === 'up') return 'text-emerald-300 border-emerald-500/40 bg-emerald-500/15';
+  if (trend === 'down') return 'text-rose-300 border-rose-500/40 bg-rose-500/15';
+  return 'text-cyan border-cyan/45 bg-cyan/10';
+}
 
 export default function HomePage() {
   return (
-    <div className="space-y-12 md:space-y-14">
-      <section className="hud-panel relative overflow-hidden border border-white/10 bg-bg px-6 py-10 md:px-10 md:py-14">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(85%_70%_at_35%_0%,rgba(208,177,115,0.16),transparent_62%)]" />
-        <div className="pointer-events-none absolute inset-0 opacity-[0.035] [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.8)_0_0.6px,transparent_0.7px),radial-gradient(circle_at_70%_80%,rgba(94,220,255,0.7)_0_0.6px,transparent_0.7px)] [background-size:5px_5px,6px_6px]" />
-
-        <div className="relative max-w-4xl">
-          <p className="hud-label text-xs font-semibold uppercase tracking-[0.22em] text-magenta">Live Main Event</p>
-          <div className="mt-4 flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.12em] text-white/90 md:text-base">
-            <span>@ALPHA</span>
-            <span className="text-magenta">VS</span>
-            <span>@BETA</span>
-          </div>
-          <div className="hud-divider mt-3 h-px w-full max-w-xl bg-white/20" />
-          <p className="mt-4 text-2xl font-black uppercase tracking-[0.05em] text-magenta md:text-4xl">$50,000 ON THE LINE</p>
-
-          <h1 className="mt-8 max-w-3xl text-4xl font-black uppercase leading-[0.95] tracking-[-0.02em] md:text-6xl">1v1 head to head Betting</h1>
-          <p className="mt-4 max-w-2xl text-white/75">Put your money where your mouth is.</p>
-
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/create" className="rounded-xl border border-neon/30 bg-neon/20 px-5 py-3 font-semibold text-neon hover:bg-neon/30 hover:border-neon/50">
-              Create a bet
-            </Link>
-            <Link href="/bets" className="rounded-xl border border-white/20 bg-black/20 px-5 py-3 font-semibold text-white hover:border-white/30 hover:text-gold">
-              Browse bets
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <h2 className="text-2xl font-extrabold uppercase tracking-[0.01em]">Live Challenges</h2>
-          <p className="hud-label text-xs font-semibold uppercase tracking-[0.18em] text-white/60">Fight Card Board</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {liveChallenges.map((challenge) => (
-            <article
-              key={`${challenge.challenger}-${challenge.opponent}`}
-              className="hud-card group relative overflow-hidden rounded-md border border-white/10 bg-panel p-4 transition duration-200 hover:-translate-y-0.5 hover:border-cyan/30"
+    <div className="space-y-6">
+      <section className="hud-panel overflow-hidden rounded-xl border border-white/10 bg-panel p-3 md:p-4">
+        <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
+          {quickFilters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className="rounded-md border border-white/15 bg-black/20 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.11em] text-white/70 hover:border-cyan/30 hover:text-white"
             >
-              <span className="absolute left-0 top-0 h-full w-[2px] bg-magenta" />
-              <div className="relative">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="hud-label text-xs font-semibold uppercase tracking-[0.1em] text-white/85">
-                    {challenge.challenger} <span className="px-1 text-magenta">VS</span> {challenge.opponent}
-                  </p>
-                  <span className="hud-label rounded-md border border-magenta/60 bg-magenta/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-magenta">
-                    Live
-                  </span>
-                </div>
-                <p className="mt-4 text-3xl font-black tracking-tight text-white">{challenge.stake}</p>
-                <p className="mt-2 text-sm text-white/75">{challenge.condition}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs uppercase tracking-[0.1em] text-white/60">
-                  <span className="hud-label text-white/55">Time Remaining</span>
-                  <span className="font-semibold text-white/80">{challenge.remaining}</span>
-                </div>
-              </div>
-            </article>
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {primaryCategories.map((category, index) => (
+            <button
+              key={category}
+              type="button"
+              className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
+                index === 0
+                  ? 'border-cyan/45 bg-cyan/10 text-cyan'
+                  : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
+              }`}
+            >
+              {category}
+            </button>
           ))}
         </div>
       </section>
 
-      <section>
-        <h2 className="text-2xl font-extrabold uppercase tracking-[0.01em]">Rules of the Ring</h2>
-        <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {ringRules.map((item, index) => (
-            <article key={item.title} className="hud-card rounded-md border border-white/10 bg-panel p-4 transition hover:-translate-y-0.5 hover:border-cyan/30">
-              <p className="hud-label text-[11px] font-bold uppercase tracking-[0.16em] text-cyan">Rule {String(index + 1).padStart(2, '0')}</p>
-              <h3 className="mt-2 text-sm font-extrabold uppercase tracking-[0.06em] text-neon">{item.title}</h3>
-              <p className="mt-2 text-sm leading-snug text-white/75">{item.description}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-extrabold uppercase tracking-[0.01em]">How it works</h2>
-        <div className="mt-5 grid gap-3 md:grid-cols-4">
-          {['Create the bet', 'Counterparty takes the bet', 'Oracle determines who won', 'Winner takes all'].map((step, i) => (
-            <div key={step} className="hud-card rounded-md border border-white/10 bg-panel p-4 transition hover:-translate-y-0.5 hover:border-cyan/30">
-              <p className="hud-label inline-block border border-cyan/45 bg-cyan/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-cyan">
-                Step {i + 1}
-              </p>
-              <p className="mt-3 font-semibold text-white/90">{step}</p>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {markets.map((market) => (
+          <article key={market.title} className="hud-card rounded-md border border-white/10 bg-panel p-3">
+            <div className="flex items-start justify-between gap-2">
+              <p className="line-clamp-2 text-sm font-semibold leading-snug text-white/90">{market.title}</p>
+              <span className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${trendClasses(market.trend)}`}>
+                {market.trend}
+              </span>
             </div>
-          ))}
+
+            <p className="mt-1 text-[11px] uppercase tracking-[0.08em] text-white/45">{market.subtitle}</p>
+
+            <div className="mt-3 flex items-end justify-between border-y border-white/10 py-2.5">
+              <div>
+                <p className="text-xl font-black text-white">{market.chance}</p>
+                <p className="text-[11px] uppercase tracking-[0.09em] text-white/45">Implied chance</p>
+              </div>
+              <p className="text-[11px] uppercase tracking-[0.1em] text-white/60">{market.volume}</p>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-emerald-200"
+              >
+                Yes <span className="text-emerald-50/80">{market.yesPrice}</span>
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-rose-200"
+              >
+                No <span className="text-rose-50/80">{market.noPrice}</span>
+              </button>
+            </div>
+
+            <p className="mt-3 text-[11px] uppercase tracking-[0.08em] text-white/45">{market.closes}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-panel p-5 md:flex md:items-center md:justify-between">
+        <div>
+          <p className="hud-label text-white/50">Build your own market</p>
+          <h2 className="mt-2 text-2xl font-black uppercase">Challenge anyone 1v1</h2>
+          <p className="mt-2 max-w-xl text-sm text-white/70">Define the terms, pick oracle resolution, and lock collateral in a non-custodial contract.</p>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2 md:mt-0">
+          <Link href="/create" className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon">
+            Create a market
+          </Link>
+          <Link href="/bets" className="rounded-md border border-white/20 bg-black/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
+            View all bets
+          </Link>
         </div>
       </section>
     </div>
