@@ -6,10 +6,16 @@ export function Nav() {
     <header className="sticky top-0 z-40 border-b border-white/15 bg-bg/95">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-6 md:py-5">
         <Logo />
-        <nav className="hidden gap-5 text-sm text-white/90 md:flex [&_a]:tracking-wide [&_a]:transition [&_a]:hover:text-gold">
-          <Link href="/">Home</Link>
-          <Link href="/bets">Browse</Link>
-          <Link href="/create">Create</Link>
+        <nav className="hidden gap-5 text-sm text-white/90 md:flex">
+          <Link href="/" className="tracking-wide transition hover:text-gold">
+            Home
+          </Link>
+          <Link href="/bets" className="tracking-wide transition hover:text-gold">
+            Browse
+          </Link>
+          <Link href="/create" className="tracking-wide transition hover:text-gold">
+            Create
+          </Link>
         </nav>
         <button
           type="button"
