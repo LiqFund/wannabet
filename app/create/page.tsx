@@ -89,6 +89,7 @@ function formatBetLine(form: CreateFormState): string {
 
 export default function CreatePage() {
   const [loading, setLoading] = useState(false);
+  const [showXLinkPanel, setShowXLinkPanel] = useState(false);
   const [form, setForm] = useState<CreateFormState>({
     title: '',
     description: '',
@@ -159,6 +160,7 @@ export default function CreatePage() {
         <textarea required placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="h-24 w-full rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45" />
 
         <div className="grid gap-2 md:grid-cols-2">
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Sector</span>
             <select value={form.sector} onChange={(e) => setForm({ ...form, sector: e.target.value as Sector })} className={inputClass(errors.sector)}>
@@ -167,12 +169,15 @@ export default function CreatePage() {
               <option value="SPORTS" disabled title="Unavailable">Sports</option>
             </select>
           </label>
+          <label className="space-y-2">
+            {/* Edit the TEMPLATE label text here. */}
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Template</span>
             <select value={form.templateType} onChange={(e) => setForm({ ...form, templateType: e.target.value as CryptoTemplate, direction: e.target.value === 'PERCENT_MOVE' ? 'UP' : 'ABOVE' })} className="rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45">
               {(Object.keys(templateLabels) as CryptoTemplate[]).map((t) => <option key={t} value={t}>{templateLabels[t]}</option>)}
             </select>
           </label>
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Asset</span>
             <select value={form.assetBase} onChange={(e) => setForm({ ...form, assetBase: e.target.value as Asset })} className={inputClass(errors.assetBase)}>
@@ -181,6 +186,7 @@ export default function CreatePage() {
               <option value="SOL">SOL</option>
             </select>
           </label>
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Quote</span>
             <input value={form.assetQuote} readOnly aria-readonly className="rounded-md border border-white/15 bg-bg/70 p-2 text-white/85" />
@@ -188,6 +194,7 @@ export default function CreatePage() {
         </div>
 
         {form.templateType !== 'PERCENT_MOVE' ? (
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Resolve at (UTC)</span>
             <input value={toLocalInputValue(form.resolveAtIso)} type="datetime-local" onChange={(e) => setForm({ ...form, resolveAtIso: fromLocalInputValue(e.target.value) })} className={inputClass(errors.resolveAtIso)} />
@@ -195,11 +202,13 @@ export default function CreatePage() {
           </label>
         ) : (
           <div className="grid gap-2 md:grid-cols-2">
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Start (UTC)</span>
               <input value={toLocalInputValue(form.startAtIso)} type="datetime-local" onChange={(e) => setForm({ ...form, startAtIso: fromLocalInputValue(e.target.value) })} className={inputClass(errors.startAtIso || errors.window)} />
               <p className="text-xs text-white/60">{formatLocalLabel(form.startAtIso)}</p>
             </label>
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">End (UTC)</span>
               <input value={toLocalInputValue(form.endAtIso)} type="datetime-local" onChange={(e) => setForm({ ...form, endAtIso: fromLocalInputValue(e.target.value) })} className={inputClass(errors.endAtIso || errors.window)} />
@@ -210,6 +219,7 @@ export default function CreatePage() {
 
         {form.templateType === 'PRICE_ABOVE_BELOW' ? (
           <div className="grid gap-2 md:grid-cols-2">
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Direction</span>
               <select value={form.direction === 'BELOW' ? 'BELOW' : 'ABOVE'} onChange={(e) => setForm({ ...form, direction: e.target.value as Direction })} className="rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45">
@@ -217,6 +227,8 @@ export default function CreatePage() {
                 <option value="BELOW">Below</option>
               </select>
             </label>
+            <label className="space-y-2">
+              {/* Edit the STRIKE PRICE label text here. */}
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Strike price</span>
               <input type="number" min="0" step="0.01" value={form.strikePrice} onChange={(e) => setForm({ ...form, strikePrice: e.target.value })} className={inputClass(errors.strikePrice)} />
@@ -226,6 +238,11 @@ export default function CreatePage() {
 
         {form.templateType === 'PRICE_RANGE' ? (
           <div className="grid gap-2 md:grid-cols-2">
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Lower bound</span>
+              <input type="number" min="0" step="0.01" value={form.lowerBound} onChange={(e) => setForm({ ...form, lowerBound: e.target.value })} className={inputClass(errors.lowerBound || errors.upperBound)} />
+            </label>
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Lower bound</span>
               <input type="number" min="0" step="0.01" value={form.lowerBound} onChange={(e) => setForm({ ...form, lowerBound: e.target.value })} className={inputClass(errors.lowerBound || errors.upperBound)} />
@@ -239,6 +256,7 @@ export default function CreatePage() {
 
         {form.templateType === 'PERCENT_MOVE' ? (
           <div className="grid gap-2 md:grid-cols-2">
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Direction</span>
               <select value={form.direction === 'DOWN' ? 'DOWN' : 'UP'} onChange={(e) => setForm({ ...form, direction: e.target.value as Direction })} className="rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45">
@@ -246,6 +264,7 @@ export default function CreatePage() {
                 <option value="DOWN">Down</option>
               </select>
             </label>
+            <label className="space-y-2">
             <label className="space-y-1">
               <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Threshold %</span>
               <input type="number" min="0" step="0.1" value={form.thresholdPercent} onChange={(e) => setForm({ ...form, thresholdPercent: e.target.value })} className={inputClass(errors.thresholdPercent)} />
@@ -254,6 +273,11 @@ export default function CreatePage() {
         ) : null}
 
         <div className="grid gap-2 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Amount</span>
+            <input required type="number" min="0.01" step="0.01" value={form.stakePerSide} onChange={(e) => setForm({ ...form, stakePerSide: e.target.value })} className={inputClass(errors.stakePerSide)} />
+          </label>
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Amount</span>
             <input required type="number" min="0.01" step="0.01" value={form.stakePerSide} onChange={(e) => setForm({ ...form, stakePerSide: e.target.value })} className={inputClass(errors.stakePerSide)} />
@@ -264,6 +288,7 @@ export default function CreatePage() {
               <option value="USDC">USDC</option>
             </select>
           </label>
+          <label className="space-y-2 md:col-span-2">
           <label className="space-y-1 md:col-span-2">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Creator wallet (connect to set)</span>
             <input value={form.creatorAddress} disabled className="rounded-md border border-white/15 bg-bg/70 p-2 text-white/70" />
@@ -271,6 +296,17 @@ export default function CreatePage() {
         </div>
 
         <div className="grid gap-2 md:grid-cols-2">
+          <label className="space-y-2">
+            <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-white/75">
+              <span>Creator X handle</span>
+              <button type="button" onClick={() => setShowXLinkPanel((prev) => !prev)} className="rounded-md border border-white/20 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white/80 hover:border-magenta/40 hover:bg-white/10">
+                Connect X
+              </button>
+            </span>
+            <input value={form.xCreatorHandle} onChange={(e) => setForm({ ...form, xCreatorHandle: e.target.value.replace('@', '') })} className="rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45" />
+            {showXLinkPanel ? <p className="text-xs text-white/65">X linking not available in this build.</p> : null}
+          </label>
+          <label className="space-y-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wide text-white/75">Creator X handle</span>
             <input value={form.xCreatorHandle} onChange={(e) => setForm({ ...form, xCreatorHandle: e.target.value.replace('@', '') })} className="rounded-md border border-white/15 bg-bg p-2 hover:border-magenta/45 focus-visible:border-neon/45" />
