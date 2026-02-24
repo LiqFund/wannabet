@@ -313,7 +313,7 @@ export default function CreatePage() {
           <input type="checkbox" checked={form.handlesPublic} onChange={(e) => setForm({ ...form, handlesPublic: e.target.checked })} /> {labels.showHandles}
         </label>
 
-        <button disabled={loading} className="rounded-md border border-neon/30 bg-neon/20 px-5 py-3 font-semibold text-neon hover:border-neon/50 hover:bg-neon/30 disabled:opacity-60">{loading ? 'Saving...' : 'Save Draft'}</button>
+        <button disabled={loading} className="rounded-md border border-neon/30 bg-neon/20 px-5 py-3 font-semibold text-neon hover:border-neon/50 hover:bg-neon/30 disabled:opacity-60">{loading ? 'Saving...' : 'Create Bet'}</button>
       </form>
 
       <aside className="rounded-lg border border-white/15 bg-panel/95 p-5 shadow-magenta">
