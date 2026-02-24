@@ -5,7 +5,7 @@ import { Footer } from '@/components/footer';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
-  title: 'Wanna Bet? - The worlds leading head to head betting platform',
+  title: 'Wanna Bet? │ The worlds leading head to head betting platform',
   description: 'Challenge anyone to a direct bet. Lock the terms. Escrow the funds. Settle by oracle data.',
   openGraph: {
     title: 'wannabet.you',
