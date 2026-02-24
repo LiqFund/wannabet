@@ -6,9 +6,9 @@ type Market = {
   closes: string;
 };
 
-const primaryCategories = ['Finance', 'Sports'];
+const primaryCategories = ['Crypto', 'Finance', 'Sports'];
 
-const quickFilters = ['Trending', 'Breaking', 'New', 'Ending Soon', 'Most Volume', 'Big Movers'];
+const quickFilters: string[] = [];
 
 const markets: Market[] = [
   {
