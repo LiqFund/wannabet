@@ -1,69 +1,53 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
-type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Rates" | "Macro" | "Volatility";
-
-type BetType =
-  | "Threshold"
-  | "Range"
-  | "Relative Performance"
-  | "Time-to-Touch"
-  | "Ratio"
-  | "Volatility"
-  | "Multi-Condition";
-
+type Sector = "Crypto" | "Equities" | "Commodities" | "FX";
+type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
 type Comparator = "Above" | "Below";
 type SettlementToken = "USDC" | "SOL" | "USDT";
 
 type Underlying = {
   id: string;
   label: string;
-  sector: Sector;
-  tags?: string[];
 };
 
-const UNDERLYINGS: Underlying[] = [
-  { id: "BTC/USD", label: "BTC / USD", sector: "Crypto", tags: ["major"] },
-  { id: "ETH/USD", label: "ETH / USD", sector: "Crypto", tags: ["major"] },
-  { id: "SOL/USD", label: "SOL / USD", sector: "Crypto", tags: ["major"] },
-  { id: "BNB/USD", label: "BNB / USD", sector: "Crypto" },
-  { id: "XRP/USD", label: "XRP / USD", sector: "Crypto" },
+const UNDERLYINGS_BY_SECTOR: Record<Sector, Underlying[]> = {
+  Crypto: [
+    { id: "BTC/USD", label: "BTC / USD" },
+    { id: "ETH/USD", label: "ETH / USD" },
+    { id: "SOL/USD", label: "SOL / USD" },
+    { id: "BNB/USD", label: "BNB / USD" },
+    { id: "XRP/USD", label: "XRP / USD" },
+  ],
+  Equities: [
+    { id: "SPY", label: "SPY (S&P 500 ETF)" },
+    { id: "QQQ", label: "QQQ (Nasdaq 100 ETF)" },
+    { id: "AAPL", label: "AAPL" },
+    { id: "NVDA", label: "NVDA" },
+    { id: "TSLA", label: "TSLA" },
+  ],
+  Commodities: [
+    { id: "XAU/USD", label: "Gold (XAU / USD)" },
+    { id: "XAG/USD", label: "Silver (XAG / USD)" },
+    { id: "WTI", label: "WTI Crude Oil" },
+    { id: "BRENT", label: "Brent Crude Oil" },
+  ],
+  FX: [{ id: "DXY", label: "DXY" }],
+};
 
-  { id: "SPY", label: "SPY (S&P 500 ETF)", sector: "Equities", tags: ["index"] },
-  { id: "QQQ", label: "QQQ (Nasdaq 100 ETF)", sector: "Equities", tags: ["index"] },
-  { id: "AAPL", label: "AAPL", sector: "Equities" },
-  { id: "NVDA", label: "NVDA", sector: "Equities" },
-  { id: "TSLA", label: "TSLA", sector: "Equities" },
+const BET_TYPES_BY_SECTOR: Record<Sector, BetType[]> = {
+  Crypto: ["Threshold", "Time-to-Touch", "Relative Performance"],
+  Equities: ["Threshold", "Time-to-Touch", "Relative Performance"],
+  Commodities: ["Threshold", "Time-to-Touch"],
+  FX: ["Threshold", "Time-to-Touch"],
+};
 
-  { id: "XAU/USD", label: "Gold (XAU / USD)", sector: "Commodities", tags: ["metal"] },
-  { id: "XAG/USD", label: "Silver (XAG / USD)", sector: "Commodities", tags: ["metal"] },
-  { id: "WTI", label: "WTI Crude Oil", sector: "Commodities", tags: ["energy"] },
-  { id: "BRENT", label: "Brent Crude Oil", sector: "Commodities", tags: ["energy"] },
-
-  { id: "EUR/USD", label: "EUR / USD", sector: "FX" },
-  { id: "USD/JPY", label: "USD / JPY", sector: "FX" },
-  { id: "GBP/USD", label: "GBP / USD", sector: "FX" },
-
-  { id: "US10Y", label: "US 10Y Yield", sector: "Rates", tags: ["yield"] },
-  { id: "US02Y", label: "US 2Y Yield", sector: "Rates", tags: ["yield"] },
-
-  { id: "US_CPI_YOY", label: "US CPI YoY (%)", sector: "Macro", tags: ["release"] },
-  { id: "US_GDP_QOQ", label: "US GDP QoQ (%)", sector: "Macro", tags: ["release"] },
-
-  { id: "VIX", label: "VIX Index", sector: "Volatility", tags: ["index"] },
-  { id: "BTC_RVOL_30D", label: "BTC Realized Vol (30D)", sector: "Volatility", tags: ["derived"] },
-];
-
-const BET_TYPES: { id: BetType; desc: string; needs: ("A" | "B")[] }[] = [
-  { id: "Threshold", desc: "Price above or below a level at expiry", needs: ["A"] },
-  { id: "Range", desc: "Price between two bounds at expiry", needs: ["A"] },
-  { id: "Relative Performance", desc: "A outperforms B over a period", needs: ["A", "B"] },
-  { id: "Time-to-Touch", desc: "A touches a level before expiry", needs: ["A"] },
-  { id: "Ratio", desc: "A/B ratio above or below a level at expiry", needs: ["A", "B"] },
-  { id: "Volatility", desc: "Vol metric above or below a level at expiry", needs: ["A"] },
-  { id: "Multi-Condition", desc: "Combine two numeric conditions with AND", needs: ["A", "B"] },
-];
+const BET_TYPE_DESC: Record<BetType, string> = {
+  Threshold: "Price above or below a level at expiry",
+  "Relative Performance": "A outperforms B over a period",
+  "Time-to-Touch": "A touches a level before expiry",
+};
 
 function clsx(...xs: Array<string | false | null | undefined>) {
   return xs.filter(Boolean).join(" ");
@@ -179,22 +163,12 @@ export default function BetCreatePage() {
   const [comparatorA, setComparatorA] = useState<Comparator>("Above");
   const [strikeA, setStrikeA] = useState<string>("100000");
 
-  const [lower, setLower] = useState<string>("90000");
-  const [upper, setUpper] = useState<string>("110000");
-
-  const [ratioComparator, setRatioComparator] = useState<Comparator>("Above");
-  const [ratioLevel, setRatioLevel] = useState<string>("0.08");
-
-  const [volComparator, setVolComparator] = useState<Comparator>("Above");
-  const [volLevel, setVolLevel] = useState<string>("80");
-
   const [stakeAmount, setStakeAmount] = useState<string>("100000");
   const [stakeToken, setStakeToken] = useState<SettlementToken>("USDC");
 
   const [title, setTitle] = useState<string>("");
 
-  const needs = useMemo(() => BET_TYPES.find((x) => x.id === betType)?.needs ?? ["A"], [betType]);
-  const searchAllowed = sector !== "Macro";
+  const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
 
   const toUtcInputValue = (iso: string) => (iso ? iso.slice(0, 16) : "");
   const fromUtcInputValue = (value: string) => (value ? new Date(`${value}:00Z`).toISOString() : "");
@@ -208,21 +182,54 @@ export default function BetCreatePage() {
   };
 
   const underlyingsForSector = useMemo(() => {
-    const q = searchAllowed ? search.trim().toLowerCase() : "";
-    return UNDERLYINGS.filter((u) => u.sector === sector).filter((u) => {
+    const q = search.trim().toLowerCase();
+    return UNDERLYINGS_BY_SECTOR[sector].filter((u) => {
       if (!q) return true;
-      return u.label.toLowerCase().includes(q) || u.id.toLowerCase().includes(q) || (u.tags ?? []).some((t) => t.includes(q));
+      return u.label.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
     });
-  }, [search, searchAllowed, sector]);
+  }, [search, sector]);
 
   const aOptions = underlyingsForSector;
-  const bOptions = useMemo(() => UNDERLYINGS.filter((u) => u.sector === sector), [sector]);
+  const bOptions = useMemo(() => UNDERLYINGS_BY_SECTOR[sector].filter((u) => u.id !== underlyingA), [sector, underlyingA]);
+  const canUseB = betType === "Relative Performance";
 
-  const canUseB = needs.includes("B");
+  useEffect(() => {
+    if (!allowedBetTypes.includes(betType)) {
+      setBetType(allowedBetTypes[0]);
+    }
+  }, [allowedBetTypes, betType]);
+
+  useEffect(() => {
+    const sectorUnderlyings = UNDERLYINGS_BY_SECTOR[sector];
+    if (!sectorUnderlyings.some((u) => u.id === underlyingA)) {
+      setUnderlyingA(sectorUnderlyings[0]?.id ?? "");
+    }
+  }, [sector, underlyingA]);
+
+  useEffect(() => {
+    if (betType !== "Relative Performance") return;
+    const sectorUnderlyings = UNDERLYINGS_BY_SECTOR[sector];
+    const fallbackB = sectorUnderlyings.find((u) => u.id !== underlyingA)?.id ?? "";
+    if (!fallbackB) {
+      setUnderlyingB("");
+      return;
+    }
+    if (underlyingB === underlyingA || !sectorUnderlyings.some((u) => u.id === underlyingB)) {
+      setUnderlyingB(fallbackB);
+    }
+  }, [betType, sector, underlyingA, underlyingB]);
+
+  const labelById = useMemo(() => {
+    const labels = new Map<string, string>();
+    Object.values(UNDERLYINGS_BY_SECTOR)
+      .flat()
+      .forEach((u) => labels.set(u.id, u.label));
+    return labels;
+  }, []);
 
   const summary = useMemo(() => {
-    const A = UNDERLYINGS.find((u) => u.id === underlyingA)?.label ?? underlyingA;
-    const B = UNDERLYINGS.find((u) => u.id === underlyingB)?.label ?? underlyingB;
+    const A = labelById.get(underlyingA) ?? underlyingA;
+    const B = labelById.get(underlyingB) ?? underlyingB;
 
     const expiry =
       expiryPreset === "Custom"
@@ -237,18 +244,10 @@ export default function BetCreatePage() {
 
     if (betType === "Threshold") {
       condition = `${A} ${comparatorA === "Above" ? ">" : "<"} ${formatNumber(strikeA)} at expiry`;
-    } else if (betType === "Range") {
-      condition = `${A} between ${formatNumber(lower)} and ${formatNumber(upper)} at expiry`;
     } else if (betType === "Time-to-Touch") {
       condition = `${A} touches ${formatNumber(strikeA)} before expiry`;
     } else if (betType === "Relative Performance") {
       condition = `${A} outperforms ${B} over ${expiry}`;
-    } else if (betType === "Ratio") {
-      condition = `${A}/${B} ${ratioComparator === "Above" ? ">" : "<"} ${formatNumber(ratioLevel)} at expiry`;
-    } else if (betType === "Volatility") {
-      condition = `${A} volatility ${volComparator === "Above" ? ">" : "<"} ${formatNumber(volLevel)} at expiry`;
-    } else if (betType === "Multi-Condition") {
-      condition = `${A} ${comparatorA === "Above" ? ">" : "<"} ${formatNumber(strikeA)} AND ${B} ${ratioComparator === "Above" ? ">" : "<"} ${formatNumber(ratioLevel)} at expiry`;
     }
 
     return {
@@ -259,25 +258,7 @@ export default function BetCreatePage() {
       stake: `${formatNumber(stakeAmount)} ${stakeToken}`,
       title: title.trim() || "Untitled bet",
     };
-  }, [
-    betType,
-    comparatorA,
-    expiryDate,
-    expiryPreset,
-    lower,
-    ratioComparator,
-    ratioLevel,
-    sector,
-    stakeAmount,
-    stakeToken,
-    strikeA,
-    title,
-    underlyingA,
-    underlyingB,
-    upper,
-    volComparator,
-    volLevel,
-  ]);
+  }, [betType, comparatorA, expiryDate, expiryPreset, labelById, sector, stakeAmount, stakeToken, strikeA, title, underlyingA, underlyingB]);
 
   const shellStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -319,32 +300,21 @@ export default function BetCreatePage() {
                     <option value="Equities">Equities</option>
                     <option value="Commodities">Commodities</option>
                     <option value="FX">FX</option>
-                    <option value="Rates">Rates</option>
-                    <option value="Macro">Macro</option>
-                    <option value="Volatility">Volatility</option>
                   </Select>
                 </FieldRow>
 
-                {searchAllowed ? (
-                  <FieldRow label="Search underlyings" hint="Filter by ticker, name, or tag.">
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder='Try "btc", "index", "yield", "metal"...'
-                    />
-                  </FieldRow>
-                ) : (
-                  <FieldRow label="Search underlyings" hint="Macro markets are fixed series, no search needed.">
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
-                      Macro markets are fixed series, no search needed.
-                    </div>
-                  </FieldRow>
-                )}
+                <FieldRow label="Search underlyings" hint="Filter by ticker or name.">
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder='Try "btc", "spy", "gold", "dxy"...'
+                  />
+                </FieldRow>
 
                 <FieldRow
                   label="Underlying A"
                   hint="Primary market used in the bet condition."
-                  right={<Pill>{needs.includes("A") ? "Required" : "Optional"}</Pill>}
+                  right={<Pill>Required</Pill>}
                 >
                   <Select value={underlyingA} onChange={(e) => setUnderlyingA(e.target.value)}>
                     {aOptions.map((u) => (
@@ -354,7 +324,6 @@ export default function BetCreatePage() {
                     ))}
                   </Select>
                 </FieldRow>
-
               </div>
             </SectionCard>
 
@@ -362,9 +331,9 @@ export default function BetCreatePage() {
               <div className="flex flex-col gap-5">
                 <FieldRow label="Bet structure" hint="Pick the contract form you want." right={<Pill>Required</Pill>}>
                   <Select value={betType} onChange={(e) => setBetType(e.target.value as BetType)}>
-                    {BET_TYPES.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.id}
+                    {allowedBetTypes.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
                       </option>
                     ))}
                   </Select>
@@ -372,9 +341,7 @@ export default function BetCreatePage() {
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="text-sm font-medium text-white/85">What this means</div>
-                  <div className="mt-1 text-sm text-white/60">
-                    {BET_TYPES.find((x) => x.id === betType)?.desc}
-                  </div>
+                  <div className="mt-1 text-sm text-white/60">{BET_TYPE_DESC[betType]}</div>
                 </div>
               </div>
             </SectionCard>
@@ -384,7 +351,7 @@ export default function BetCreatePage() {
                 {canUseB ? (
                   <FieldRow
                     label="Underlying B"
-                    hint="Required for relative, ratio, and multi-condition bets."
+                    hint="Required for relative performance bets. Must differ from Underlying A."
                     right={<Pill>Required</Pill>}
                   >
                     <Select value={underlyingB} onChange={(e) => setUnderlyingB(e.target.value)}>
@@ -397,7 +364,7 @@ export default function BetCreatePage() {
                   </FieldRow>
                 ) : null}
 
-                {(betType === "Threshold" || betType === "Time-to-Touch") && (
+                {betType === "Threshold" && (
                   <>
                     <FieldRow label="Direction" hint="Above or below the target.">
                       <Select value={comparatorA} onChange={(e) => setComparatorA(e.target.value as Comparator)}>
@@ -405,88 +372,24 @@ export default function BetCreatePage() {
                         <option value="Below">Below</option>
                       </Select>
                     </FieldRow>
-
-                    <FieldRow label="Target level" hint="The numeric strike.">
+                    <FieldRow label="Strike level" hint="Numeric level evaluated at expiry.">
                       <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
                     </FieldRow>
                   </>
                 )}
 
-                {betType === "Range" && (
-                  <>
-                    <FieldRow label="Lower bound" hint="Minimum value at expiry.">
-                      <Input value={lower} onChange={(e) => setLower(e.target.value)} placeholder="e.g. 90000" />
-                    </FieldRow>
-                    <FieldRow label="Upper bound" hint="Maximum value at expiry.">
-                      <Input value={upper} onChange={(e) => setUpper(e.target.value)} placeholder="e.g. 110000" />
-                    </FieldRow>
-                  </>
-                )}
-
-                {betType === "Ratio" && (
-                  <>
-                    <FieldRow label="Ratio direction" hint="Compare A/B to a level.">
-                      <Select value={ratioComparator} onChange={(e) => setRatioComparator(e.target.value as Comparator)}>
-                        <option value="Above">Above</option>
-                        <option value="Below">Below</option>
-                      </Select>
-                    </FieldRow>
-                    <FieldRow label="Ratio level" hint="Example: ETH/BTC = 0.08">
-                      <Input value={ratioLevel} onChange={(e) => setRatioLevel(e.target.value)} placeholder="e.g. 0.08" />
-                    </FieldRow>
-                  </>
-                )}
-
-                {betType === "Volatility" && (
-                  <>
-                    <FieldRow label="Vol direction" hint="Above or below the vol threshold.">
-                      <Select value={volComparator} onChange={(e) => setVolComparator(e.target.value as Comparator)}>
-                        <option value="Above">Above</option>
-                        <option value="Below">Below</option>
-                      </Select>
-                    </FieldRow>
-                    <FieldRow label="Vol level" hint="Percent, not decimals. Example: 80 means 80%.">
-                      <Input value={volLevel} onChange={(e) => setVolLevel(e.target.value)} placeholder="e.g. 80" />
-                    </FieldRow>
-                  </>
+                {betType === "Time-to-Touch" && (
+                  <FieldRow label="Touch level" hint="Any touch before expiry resolves YES.">
+                    <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
+                  </FieldRow>
                 )}
 
                 {betType === "Relative Performance" && (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="text-sm text-white/80">
-                      No extra parameters. The outcome is based on performance over the selected period.
+                      Outperformance is based on percent change from start to end of the selected period.
                     </div>
                   </div>
-                )}
-
-                {betType === "Multi-Condition" && (
-                  <>
-                    <FieldRow label="Condition A direction" hint="First condition uses Underlying A.">
-                      <Select value={comparatorA} onChange={(e) => setComparatorA(e.target.value as Comparator)}>
-                        <option value="Above">Above</option>
-                        <option value="Below">Below</option>
-                      </Select>
-                    </FieldRow>
-                    <FieldRow label="Condition A level" hint="Strike for Underlying A.">
-                      <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
-                    </FieldRow>
-
-                    <div className="h-px w-full bg-white/10" />
-
-                    <FieldRow label="Condition B direction" hint="Second condition uses Underlying B.">
-                      <Select value={ratioComparator} onChange={(e) => setRatioComparator(e.target.value as Comparator)}>
-                        <option value="Above">Above</option>
-                        <option value="Below">Below</option>
-                      </Select>
-                    </FieldRow>
-                    <FieldRow label="Condition B level" hint="Strike for Underlying B (numeric).">
-                      <Input value={ratioLevel} onChange={(e) => setRatioLevel(e.target.value)} placeholder="e.g. 0.08 or 5000" />
-                    </FieldRow>
-
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-sm text-white/75">This bet resolves YES only if both conditions are true.</div>
-                    </div>
-                  </>
                 )}
               </div>
             </SectionCard>
@@ -542,7 +445,6 @@ export default function BetCreatePage() {
                 </FieldRow>
               </div>
             </SectionCard>
-
           </div>
 
           <div className="lg:sticky lg:top-6">
@@ -603,7 +505,6 @@ export default function BetCreatePage() {
                   This button does nothing permanent. It’s only here to show the intended flow.
                 </div>
               </div>
-
             </div>
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/40 p-5 md:p-6">
@@ -647,16 +548,32 @@ export default function BetCreatePage() {
                     setSector("Commodities");
                     setSearch("");
                     setUnderlyingA("XAU/USD");
-                    setBetType("Range");
-                    setLower("2200");
-                    setUpper("2600");
+                    setBetType("Time-to-Touch");
+                    setStrikeA("2600");
                     setExpiryPreset("90D");
                     setStakeAmount("25000");
                     setStakeToken("USDC");
-                    setTitle("Gold between 2200 and 2600 (90D)");
+                    setTitle("Gold touches 2600 before expiry (90D)");
                   }}
                 >
-                  Gold range bet (90D)
+                  Gold touches 2600 (90D)
+                </MiniButton>
+
+                <MiniButton
+                  onClick={() => {
+                    setSector("FX");
+                    setSearch("");
+                    setUnderlyingA("DXY");
+                    setBetType("Threshold");
+                    setComparatorA("Above");
+                    setStrikeA("106");
+                    setExpiryPreset("30D");
+                    setStakeAmount("50000");
+                    setStakeToken("USDC");
+                    setTitle("DXY above 106 in 30 days");
+                  }}
+                >
+                  DXY &gt; 106 (30D)
                 </MiniButton>
               </div>
             </div>
