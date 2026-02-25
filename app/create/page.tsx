@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 
-type Sector = "Crypto" | "Equities" | "Commodities" | "FX";
+type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Sports";
 type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
 type Comparator = "Above" | "Below";
 type SettlementToken = "USDC" | "SOL" | "USDT";
@@ -34,6 +34,7 @@ const UNDERLYINGS_BY_SECTOR: Record<Sector, Underlying[]> = {
     { id: "BRENT", label: "Brent Crude Oil" },
   ],
   FX: [{ id: "DXY", label: "DXY" }],
+  Sports: [],
 };
 
 const BET_TYPES_BY_SECTOR: Record<Sector, BetType[]> = {
@@ -41,7 +42,10 @@ const BET_TYPES_BY_SECTOR: Record<Sector, BetType[]> = {
   Equities: ["Threshold", "Time-to-Touch", "Relative Performance"],
   Commodities: ["Threshold", "Time-to-Touch"],
   FX: ["Threshold", "Time-to-Touch"],
+  Sports: ["Threshold", "Time-to-Touch"],
 };
+
+const SECTOR_OPTIONS: Sector[] = ["Crypto", "Equities", "Commodities", "FX", "Sports"];
 
 const BET_TYPE_DESC: Record<BetType, string> = {
   Threshold: "Price above or below a level at expiry",
@@ -150,6 +154,31 @@ function MiniButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
         "hover:border-white/20 hover:bg-white/10 disabled:opacity-50 disabled:hover:bg-white/5"
       )}
     />
+  );
+}
+
+function SectorTabs(props: { value: Sector; onChange: (value: Sector) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {SECTOR_OPTIONS.map((option) => {
+        const isActive = props.value === option;
+        return (
+          <button
+            key={option}
+            type="button"
+            onClick={() => props.onChange(option)}
+            className={clsx(
+              "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+              isActive
+                ? "border-[rgba(212,175,55,0.55)] bg-[rgba(212,175,55,0.10)] text-white"
+                : "border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10"
+            )}
+          >
+            {option}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -311,17 +340,8 @@ export default function BetCreatePage() {
 
             <SectionCard title="1) Market" subtitle="Step 1">
               <div className="flex flex-col gap-5">
-                <FieldRow
-                  label="Sector"
-                  hint="This controls which underlyings show up."
-                  right={<Pill>Required</Pill>}
-                >
-                  <Select value={sector} onChange={(e) => setSector(e.target.value as Sector)}>
-                    <option value="Crypto">Crypto</option>
-                    <option value="Equities">Equities</option>
-                    <option value="Commodities">Commodities</option>
-                    <option value="FX">FX</option>
-                  </Select>
+                <FieldRow label="Sector" hint="This controls which underlyings show up." right={<Pill>Required</Pill>}>
+                  <SectorTabs value={sector} onChange={setSector} />
                 </FieldRow>
 
                 <FieldRow label="Search underlyings" hint="Filter by ticker or name.">
