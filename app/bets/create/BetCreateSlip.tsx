@@ -1,6 +1,3 @@
-import BetCreateSlip from "./BetCreateSlip";
-
-export default BetCreateSlip;
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -133,7 +130,7 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={clsx(
-        "w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white",
+        "w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 pr-10 text-sm text-white",
         "outline-none focus:border-white/25"
       )}
     />
@@ -187,14 +184,26 @@ export default function BetCreatePage() {
   const [title, setTitle] = useState<string>("");
 
   const needs = useMemo(() => BET_TYPES.find((x) => x.id === betType)?.needs ?? ["A"], [betType]);
+  const searchAllowed = sector !== "Macro";
+
+  const toUtcInputValue = (iso: string) => (iso ? iso.slice(0, 16) : "");
+  const fromUtcInputValue = (value: string) => (value ? new Date(`${value}:00Z`).toISOString() : "");
+  const formatUtcLabel = (iso: string) => {
+    if (!iso) return "Custom date";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "Custom date";
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")} ${String(
+      d.getUTCHours()
+    ).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
+  };
 
   const underlyingsForSector = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = searchAllowed ? search.trim().toLowerCase() : "";
     return UNDERLYINGS.filter((u) => u.sector === sector).filter((u) => {
       if (!q) return true;
       return u.label.toLowerCase().includes(q) || u.id.toLowerCase().includes(q) || (u.tags ?? []).some((t) => t.includes(q));
     });
-  }, [sector, search]);
+  }, [search, searchAllowed, sector]);
 
   const aOptions = underlyingsForSector;
   const bOptions = useMemo(() => UNDERLYINGS.filter((u) => u.sector === sector), [sector]);
@@ -207,7 +216,7 @@ export default function BetCreatePage() {
 
     const expiry =
       expiryPreset === "Custom"
-        ? expiryDate || "Custom date"
+        ? formatUtcLabel(expiryDate)
         : expiryPreset === "7D"
           ? "7 days"
           : expiryPreset === "30D"
@@ -280,6 +289,14 @@ export default function BetCreatePage() {
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="flex flex-col gap-6">
+            <SectionCard title="Title" subtitle="Start here">
+              <div className="flex flex-col gap-4">
+                <FieldRow label="Bet title" hint="Name the bet first. If empty, we use a default.">
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. BTC above 100k in 90 days" />
+                </FieldRow>
+              </div>
+            </SectionCard>
+
             <SectionCard title="1) Market" subtitle="Step 1">
               <div className="flex flex-col gap-5">
                 <FieldRow
@@ -298,13 +315,21 @@ export default function BetCreatePage() {
                   </Select>
                 </FieldRow>
 
-                <FieldRow label="Search underlyings" hint="Filter by ticker, name, or tag.">
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder='Try "btc", "index", "yield", "metal"...'
-                  />
-                </FieldRow>
+                {searchAllowed ? (
+                  <FieldRow label="Search underlyings" hint="Filter by ticker, name, or tag.">
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder='Try "btc", "index", "yield", "metal"...'
+                    />
+                  </FieldRow>
+                ) : (
+                  <FieldRow label="Search underlyings" hint="Macro markets are fixed series, no search needed.">
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
+                      Macro markets are fixed series, no search needed.
+                    </div>
+                  </FieldRow>
+                )}
 
                 <FieldRow
                   label="Underlying A"
@@ -320,21 +345,6 @@ export default function BetCreatePage() {
                   </Select>
                 </FieldRow>
 
-                {canUseB ? (
-                  <FieldRow
-                    label="Underlying B"
-                    hint="Second market used for relative, ratio, or multi-condition bets."
-                    right={<Pill>Required</Pill>}
-                  >
-                    <Select value={underlyingB} onChange={(e) => setUnderlyingB(e.target.value)}>
-                      {bOptions.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FieldRow>
-                ) : null}
               </div>
             </SectionCard>
 
@@ -361,6 +371,22 @@ export default function BetCreatePage() {
 
             <SectionCard title="3) Parameters" subtitle="Step 3">
               <div className="flex flex-col gap-5">
+                {canUseB ? (
+                  <FieldRow
+                    label="Underlying B"
+                    hint="Required for relative, ratio, and multi-condition bets."
+                    right={<Pill>Required</Pill>}
+                  >
+                    <Select value={underlyingB} onChange={(e) => setUnderlyingB(e.target.value)}>
+                      {bOptions.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </FieldRow>
+                ) : null}
+
                 {(betType === "Threshold" || betType === "Time-to-Touch") && (
                   <>
                     <FieldRow label="Direction" hint="Above or below the target.">
@@ -478,11 +504,14 @@ export default function BetCreatePage() {
 
                 {expiryPreset === "Custom" ? (
                   <FieldRow label="Expiry date" hint="Frontend only. Any date format is accepted.">
-                    <Input
-                      value={expiryDate}
-                      onChange={(e) => setExpiryDate(e.target.value)}
-                      placeholder="e.g. 2026-06-01 12:00 UTC"
-                    />
+                    <div className="space-y-2">
+                      <Input
+                        type="datetime-local"
+                        value={toUtcInputValue(expiryDate)}
+                        onChange={(e) => setExpiryDate(fromUtcInputValue(e.target.value))}
+                      />
+                      <div className="text-xs text-white/55">Stored/displayed as UTC</div>
+                    </div>
                   </FieldRow>
                 ) : null}
               </div>
@@ -504,13 +533,6 @@ export default function BetCreatePage() {
               </div>
             </SectionCard>
 
-            <SectionCard title="6) Title" subtitle="Optional">
-              <div className="flex flex-col gap-4">
-                <FieldRow label="Bet title" hint="Used for the listing card. If empty, we use a default.">
-                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. BTC above 100k in 90 days" />
-                </FieldRow>
-              </div>
-            </SectionCard>
           </div>
 
           <div className="lg:sticky lg:top-6">
@@ -572,22 +594,6 @@ export default function BetCreatePage() {
                 </div>
               </div>
 
-              <div className="mt-6 h-px w-full bg-white/10" />
-
-              <div className="mt-5 space-y-2 text-xs text-white/55">
-                <div className="flex items-center justify-between">
-                  <span>Flow</span>
-                  <span className="text-white/70">Sector → Underlyings → Type → Params → Expiry → Stake</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Backend</span>
-                  <span className="text-white/70">None</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Oracles</span>
-                  <span className="text-white/70">None</span>
-                </div>
-              </div>
             </div>
 
             <div className="mt-6 rounded-2xl border border-white/10 bg-black/40 p-5 md:p-6">
