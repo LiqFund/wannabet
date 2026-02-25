@@ -59,6 +59,12 @@ function formatNumber(x: string) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 8 });
 }
 
+function parseAmount(value: string) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0;
+  return n;
+}
+
 function SectionCard(props: { title: string; subtitle?: string; children: React.ReactNode }) {
   const gold = "#D4AF37";
   return (
@@ -149,6 +155,7 @@ function MiniButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
 
 export default function BetCreatePage() {
   const gold = "#D4AF37";
+  const oddsPresets = ["1-1", "2-1", "3-1", "4-1", "5-1", "10-1", "Custom"] as const;
 
   const [sector, setSector] = useState<Sector>("Crypto");
   const [search, setSearch] = useState("");
@@ -165,6 +172,8 @@ export default function BetCreatePage() {
 
   const [stakeAmount, setStakeAmount] = useState<string>("100000");
   const [stakeToken, setStakeToken] = useState<SettlementToken>("USDC");
+  const [oddsPreset, setOddsPreset] = useState<(typeof oddsPresets)[number]>("1-1");
+  const [oddsX, setOddsX] = useState<string>("2");
 
   const [title, setTitle] = useState<string>("");
 
@@ -250,15 +259,27 @@ export default function BetCreatePage() {
       condition = `${A} outperforms ${B} over ${expiry}`;
     }
 
+    const maker = parseAmount(stakeAmount);
+    const rawX = oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
+    const x = rawX > 0 ? rawX : 1;
+    const taker = maker > 0 ? maker / x : 0;
+
     return {
       sector,
       betType,
       expiry,
       condition,
-      stake: `${formatNumber(stakeAmount)} ${stakeToken}`,
+      makerEscrow: `${maker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+      opponentRequired: `${taker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+      odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
       title: title.trim() || "Untitled bet",
     };
-  }, [betType, comparatorA, expiryDate, expiryPreset, labelById, sector, stakeAmount, stakeToken, strikeA, title, underlyingA, underlyingB]);
+  }, [betType, comparatorA, expiryDate, expiryPreset, labelById, oddsPreset, oddsX, sector, stakeAmount, stakeToken, strikeA, title, underlyingA, underlyingB]);
+
+  const makerStake = parseAmount(stakeAmount);
+  const selectedOddsX = oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
+  const safeOddsX = selectedOddsX > 0 ? selectedOddsX : 1;
+  const takerStake = makerStake > 0 ? makerStake / safeOddsX : 0;
 
   const shellStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -432,8 +453,37 @@ export default function BetCreatePage() {
 
             <SectionCard title="5) Stake" subtitle="Step 5">
               <div className="flex flex-col gap-5">
-                <FieldRow label="Stake amount" hint="Amount each side would escrow (UI only).">
+                <FieldRow label="Your stake (Maker escrow)" hint="Amount you escrow as maker (UI only).">
                   <Input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="e.g. 100000" />
+                </FieldRow>
+
+                <FieldRow label="Odds offered" hint="Defines opponent escrow requirement as X-1.">
+                  <div className="space-y-3">
+                    <Select value={oddsPreset} onChange={(e) => setOddsPreset(e.target.value as (typeof oddsPresets)[number])}>
+                      {oddsPresets.map((preset) => (
+                        <option key={preset} value={preset}>
+                          {preset}
+                        </option>
+                      ))}
+                    </Select>
+                    {oddsPreset === "Custom" ? (
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        step="any"
+                        value={oddsX}
+                        onChange={(e) => setOddsX(e.target.value)}
+                        placeholder="Enter X for X-1 odds"
+                      />
+                    ) : null}
+                  </div>
+                </FieldRow>
+
+                <FieldRow label="Opponent stake required" hint="Calculated as Maker escrow / X.">
+                  <div className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white/85">
+                    {takerStake.toLocaleString(undefined, { maximumFractionDigits: 8 })} {stakeToken}
+                  </div>
                 </FieldRow>
 
                 <FieldRow label="Settlement token" hint="Token used to denominate the stake (UI only).">
@@ -481,8 +531,18 @@ export default function BetCreatePage() {
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Stake</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.stake}</div>
+                  <div className="text-xs text-white/55">Maker escrow</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.makerEscrow}</div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/55">Opponent required</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.opponentRequired}</div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/55">Odds</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.odds}</div>
                 </div>
               </div>
 
