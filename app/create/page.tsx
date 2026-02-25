@@ -125,15 +125,25 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+function Select({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      {...props}
-      className={clsx(
-        "w-full rounded-xl border border-white/10 bg-black/60 px-4 py-3 pr-10 text-sm text-white",
-        "outline-none focus:border-white/25"
-      )}
-    />
+    <div className="relative">
+      <select
+        {...props}
+        className={clsx(
+          "w-full appearance-none rounded-xl border border-white/10 bg-black/60 px-4 py-3 pr-11 text-sm text-white",
+          "outline-none focus:border-white/25",
+          className
+        )}
+      >
+        {children}
+      </select>
+      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/50" aria-hidden>
+        <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5.5 7.75L10 12.25L14.5 7.75" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+    </div>
   );
 }
 
