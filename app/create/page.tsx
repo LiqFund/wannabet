@@ -75,6 +75,11 @@ function formatNumber(x: string) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 8 });
 }
 
+function parseAmount(x: string) {
+  const n = Number(x);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function SectionCard(props: { title: string; subtitle?: string; children: React.ReactNode }) {
   const gold = "#D4AF37";
   return (
@@ -165,6 +170,7 @@ function MiniButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
 
 export default function BetCreatePage() {
   const gold = "#D4AF37";
+  type OddsPreset = "1-1" | "2-1" | "3-1" | "4-1" | "5-1" | "10-1" | "Custom";
 
   const [sector, setSector] = useState<Sector>("Crypto");
   const [search, setSearch] = useState("");
@@ -189,6 +195,8 @@ export default function BetCreatePage() {
   const [volLevel, setVolLevel] = useState<string>("80");
 
   const [stakeAmount, setStakeAmount] = useState<string>("100000");
+  const [oddsPreset, setOddsPreset] = useState<OddsPreset>("1-1");
+  const [oddsX, setOddsX] = useState<string>("2");
   const [stakeToken, setStakeToken] = useState<SettlementToken>("USDC");
 
   const [title, setTitle] = useState<string>("");
@@ -219,6 +227,11 @@ export default function BetCreatePage() {
   const bOptions = useMemo(() => UNDERLYINGS.filter((u) => u.sector === sector), [sector]);
 
   const canUseB = needs.includes("B");
+
+  const makerStake = parseAmount(stakeAmount);
+  const presetX = oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
+  const x = presetX > 0 ? presetX : 1;
+  const takerStake = makerStake > 0 ? makerStake / x : 0;
 
   const summary = useMemo(() => {
     const A = UNDERLYINGS.find((u) => u.id === underlyingA)?.label ?? underlyingA;
@@ -256,7 +269,9 @@ export default function BetCreatePage() {
       betType,
       expiry,
       condition,
-      stake: `${formatNumber(stakeAmount)} ${stakeToken}`,
+      makerEscrow: `${makerStake.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+      opponentRequired: `${takerStake.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+      odds: `${x}-1`,
       title: title.trim() || "Untitled bet",
     };
   }, [
@@ -268,9 +283,11 @@ export default function BetCreatePage() {
     ratioComparator,
     ratioLevel,
     sector,
-    stakeAmount,
     stakeToken,
     strikeA,
+    makerStake,
+    takerStake,
+    x,
     title,
     underlyingA,
     underlyingB,
@@ -529,8 +546,32 @@ export default function BetCreatePage() {
 
             <SectionCard title="5) Stake" subtitle="Step 5">
               <div className="flex flex-col gap-5">
-                <FieldRow label="Stake amount" hint="Amount each side would escrow (UI only).">
+                <FieldRow label="Your stake (Maker escrow)" hint="Amount you escrow as the bet creator (UI only).">
                   <Input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="e.g. 100000" />
+                </FieldRow>
+
+                <FieldRow label="Odds offered" hint="Opponent escrow is derived from these odds.">
+                  <div className="space-y-3">
+                    <Select value={oddsPreset} onChange={(e) => setOddsPreset(e.target.value as OddsPreset)}>
+                      <option value="1-1">1-1</option>
+                      <option value="2-1">2-1</option>
+                      <option value="3-1">3-1</option>
+                      <option value="4-1">4-1</option>
+                      <option value="5-1">5-1</option>
+                      <option value="10-1">10-1</option>
+                      <option value="Custom">Custom</option>
+                    </Select>
+                    {oddsPreset === "Custom" ? (
+                      <Input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={oddsX}
+                        onChange={(e) => setOddsX(e.target.value)}
+                        placeholder="Enter X for X-1 odds"
+                      />
+                    ) : null}
+                  </div>
                 </FieldRow>
 
                 <FieldRow label="Settlement token" hint="Token used to denominate the stake (UI only).">
@@ -539,6 +580,12 @@ export default function BetCreatePage() {
                     <option value="SOL">SOL</option>
                     <option value="USDT">USDT</option>
                   </Select>
+                </FieldRow>
+
+                <FieldRow label="Opponent stake required" hint="Auto-calculated from maker escrow and odds.">
+                  <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
+                    {takerStake.toLocaleString(undefined, { maximumFractionDigits: 8 })} {stakeToken}
+                  </div>
                 </FieldRow>
               </div>
             </SectionCard>
@@ -579,8 +626,18 @@ export default function BetCreatePage() {
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Stake</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.stake}</div>
+                  <div className="text-xs text-white/55">Maker escrow</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.makerEscrow}</div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/55">Opponent required</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.opponentRequired}</div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/55">Odds</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.odds}</div>
                 </div>
               </div>
 
