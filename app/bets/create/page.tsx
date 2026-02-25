@@ -1,1 +1,3 @@
-export { default } from "./BetCreateSlip";
+import BetCreateSlip from "./BetCreateSlip";
+
+export default BetCreateSlip;
