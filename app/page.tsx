@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 type Sector = 'CRYPTO' | 'EQUITIES' | 'COMMODITIES' | 'FX' | 'SPORTS';
 type ActiveTab = 'ALL' | Sector;
 type BetType = 'THRESHOLD' | 'TIME_TO_TOUCH' | 'RELATIVE_PERFORMANCE' | 'MONEYLINE' | 'OVER_UNDER';
+type BetStatus = 'LIVE' | 'AVAILABLE';
 
 type HomeBet = {
   id: string;
@@ -14,12 +15,13 @@ type HomeBet = {
   title: string;
   amountUsd: number;
   timeRemainingLabel: string;
-  isLive?: boolean;
+  status: BetStatus;
   participants?: { left: string; right: string };
 };
 
 type ParticipantType = 'sol' | 'x';
 type SortOrder = 'BIGGEST' | 'SMALLEST';
+type ActiveStatus = BetStatus;
 
 const primaryCategories: ActiveTab[] = ['ALL', 'CRYPTO', 'EQUITIES', 'COMMODITIES', 'FX', 'SPORTS'];
 
@@ -33,7 +35,7 @@ const homeBets: HomeBet[] = [
     title: 'BTC closes above $95k by Friday close?',
     amountUsd: 4200000,
     timeRemainingLabel: '1D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'crypto-btc-touch',
@@ -42,7 +44,7 @@ const homeBets: HomeBet[] = [
     title: 'ETH touches $5k before month end?',
     amountUsd: 1800000,
     timeRemainingLabel: '10D',
-    isLive: true
+    status: 'AVAILABLE'
   },
   {
     id: 'equities-relative-performance',
@@ -51,7 +53,7 @@ const homeBets: HomeBet[] = [
     title: 'MSFT outperforms AMZN over 30 days?',
     amountUsd: 950000,
     timeRemainingLabel: '90D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'equities-aapl-threshold',
@@ -60,7 +62,7 @@ const homeBets: HomeBet[] = [
     title: 'AAPL closes above $215 by Friday close?',
     amountUsd: 1620000,
     timeRemainingLabel: '5D',
-    isLive: true
+    status: 'AVAILABLE'
   },
   {
     id: 'equities-nvda-touch',
@@ -69,7 +71,7 @@ const homeBets: HomeBet[] = [
     title: 'NVDA touches $155 before month end?',
     amountUsd: 1040000,
     timeRemainingLabel: '18D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'finance-spx-threshold',
@@ -78,7 +80,7 @@ const homeBets: HomeBet[] = [
     title: 'WTI crude closes above $85 before quarter end?',
     amountUsd: 2700000,
     timeRemainingLabel: '24D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'finance-gold-touch',
@@ -87,7 +89,7 @@ const homeBets: HomeBet[] = [
     title: 'Gold touches $2,600 before month end?',
     amountUsd: 1100000,
     timeRemainingLabel: '13D',
-    isLive: true
+    status: 'AVAILABLE'
   },
   {
     id: 'commodities-silver-threshold',
@@ -96,7 +98,7 @@ const homeBets: HomeBet[] = [
     title: 'Silver closes above $34 by month end?',
     amountUsd: 740000,
     timeRemainingLabel: '14D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'fx-eurusd-threshold',
@@ -105,7 +107,7 @@ const homeBets: HomeBet[] = [
     title: 'EUR/USD closes above 1.12 by month end?',
     amountUsd: 1280000,
     timeRemainingLabel: '12D',
-    isLive: true
+    status: 'AVAILABLE'
   },
   {
     id: 'fx-usdjpy-threshold',
@@ -114,7 +116,7 @@ const homeBets: HomeBet[] = [
     title: 'USD/JPY closes below 149 by Friday close?',
     amountUsd: 860000,
     timeRemainingLabel: '4D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'sports-chiefs-49ers-moneyline',
@@ -123,7 +125,7 @@ const homeBets: HomeBet[] = [
     title: 'Chiefs win vs 49ers?',
     amountUsd: 903000,
     timeRemainingLabel: '5D',
-    isLive: true
+    status: 'LIVE'
   },
   {
     id: 'sports-total-over-under',
@@ -132,7 +134,7 @@ const homeBets: HomeBet[] = [
     title: 'Total points over 47.5?',
     amountUsd: 591000,
     timeRemainingLabel: '9H',
-    isLive: true
+    status: 'AVAILABLE'
   },
   {
     id: 'sports-fight-ko-tko',
@@ -141,7 +143,7 @@ const homeBets: HomeBet[] = [
     title: 'Fighter A wins by KO/TKO?',
     amountUsd: 316000,
     timeRemainingLabel: '3D',
-    isLive: true
+    status: 'AVAILABLE'
   }
 ];
 
@@ -207,6 +209,7 @@ function XIcon() {
 }
 
 export default function HomePage() {
+  const [activeStatus, setActiveStatus] = useState<ActiveStatus>('LIVE');
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALL');
   const [sortOrder, setSortOrder] = useState<SortOrder>('BIGGEST');
 
@@ -234,16 +237,17 @@ export default function HomePage() {
   );
 
   const displayedMarketCards = useMemo(() => {
-    const visible = activeTab === 'ALL' ? marketCards : marketCards.filter(({ bet }) => bet.sector === activeTab);
+    const statusFiltered = marketCards.filter(({ bet }) => bet.status === activeStatus);
+    const sectorFiltered = activeTab === 'ALL' ? statusFiltered : statusFiltered.filter(({ bet }) => bet.sector === activeTab);
 
-    return visible.sort((a, b) => {
+    return sectorFiltered.sort((a, b) => {
       if (sortOrder === 'SMALLEST') {
         return a.bet.amountUsd - b.bet.amountUsd;
       }
 
       return b.bet.amountUsd - a.bet.amountUsd;
     });
-  }, [activeTab, marketCards, sortOrder]);
+  }, [activeStatus, activeTab, marketCards, sortOrder]);
 
   return (
     <div className="space-y-6">
@@ -260,22 +264,43 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {primaryCategories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => setActiveTab(category)}
-                className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
-                  activeTab === category
-                    ? 'border-cyan/45 bg-cyan/10 text-cyan'
-                    : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {(['LIVE', 'AVAILABLE'] as const).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setActiveStatus(status)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
+                    activeStatus === status
+                      ? status === 'LIVE'
+                        ? 'border-rose-500/60 bg-rose-500/20 text-white'
+                        : 'border-emerald-500/60 bg-emerald-500/20 text-white'
+                      : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {primaryCategories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setActiveTab(category)}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
+                    activeTab === category
+                      ? 'border-cyan/45 bg-cyan/10 text-cyan'
+                      : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
 
           <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
@@ -331,9 +356,15 @@ export default function HomePage() {
                   </>
                 )}
               </p>
-              {bet.isLive ? (
-                <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">LIVE</span>
-              ) : null}
+              <span
+                className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${
+                  bet.status === 'LIVE'
+                    ? 'border border-rose-500/40 bg-rose-500/15 text-rose-200'
+                    : 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-200'
+                }`}
+              >
+                {bet.status}
+              </span>
             </div>
 
             <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(bet.amountUsd)}</p>
