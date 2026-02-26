@@ -6,6 +6,8 @@ type Market = {
   closes: string;
 };
 
+type ParticipantType = 'sol' | 'x';
+
 const primaryCategories = ['Crypto', 'Finance', 'Sports'];
 
 const quickFilters: string[] = [];
@@ -73,7 +75,66 @@ const markets: Market[] = [
   }
 ];
 
+const base58Chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
+
+const mockXUsernames = [
+  'solking',
+  'alpha_trades',
+  'nftwizard',
+  'chainmax',
+  'defi_drifter',
+  'mintoracle',
+  'blockrunner',
+  'satstacker',
+  'onchainpulse',
+  'tokenpilot',
+  'sol_scout',
+  'ledgerlane',
+  'cryptonova',
+  'dex_hunter',
+  'nodewatch',
+  'vaultvision',
+  'yieldcaptain',
+  'alphaorbit',
+  'marketmancer',
+  'oracle_ops',
+  'betbyte',
+  'liquidlark',
+  'chaintempo',
+  'signalforge'
+];
+
+function generateShortSolAddress() {
+  return `${Array.from({ length: 6 }, () => base58Chars[Math.floor(Math.random() * base58Chars.length)]).join('')}...`;
+}
+
+function getRandomXUsername() {
+  return `@${mockXUsernames[Math.floor(Math.random() * mockXUsernames.length)]}`;
+}
+
+function getRandomParticipant(): ParticipantType {
+  return Math.random() < 0.5 ? 'sol' : 'x';
+}
+
+function XIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3 fill-current text-white/60">
+      <path d="M18.9 2H22l-6.77 7.74L23 22h-6.07l-4.76-6.98L6.05 22H3l7.24-8.28L1 2h6.2l4.31 6.39L18.9 2Zm-1.07 18h1.69L6.3 3.9H4.5L17.83 20Z" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
+  const marketCards = markets.map((market) => {
+    const participantType = getRandomParticipant();
+    return {
+      market,
+      participantType,
+      left: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername(),
+      right: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername()
+    };
+  });
+
   return (
     <div className="space-y-6">
       <section className="hud-panel overflow-hidden rounded-xl border border-white/10 bg-panel p-3 md:p-4">
@@ -123,11 +184,27 @@ export default function HomePage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {markets.map((market) => (
+        {marketCards.map(({ market, participantType, left, right }) => (
           <article key={market.title} className="hud-card rounded-md border border-white/10 bg-panel p-3">
             <div className="flex items-start justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
-                @ALPHA <span className="mx-1 text-rose-700">VS</span> @BETA
+                {participantType === 'sol' ? (
+                  <>
+                    {left} <span className="mx-1 text-rose-700">VS</span> {right}
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-1 align-baseline">
+                      <XIcon />
+                      <span>{left}</span>
+                    </span>{' '}
+                    <span className="mx-1 text-rose-700">VS</span>{' '}
+                    <span className="inline-flex items-center gap-1 align-baseline">
+                      <XIcon />
+                      <span>{right}</span>
+                    </span>
+                  </>
+                )}
               </p>
               <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">LIVE</span>
             </div>
