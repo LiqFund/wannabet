@@ -321,7 +321,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               {(['LIVE', 'AVAILABLE'] as const).map((status) => (
@@ -360,12 +360,12 @@ export default function HomePage() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
+          <label className="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
             Sort
             <select
               value={sortOrder}
               onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-              className="rounded-md border border-white/15 bg-black/20 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
+              className="rounded-md border border-white/15 bg-black/20 py-1 pl-2 pr-10 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
             >
               <option value="BIGGEST">Biggest</option>
               <option value="SMALLEST">Smallest</option>
