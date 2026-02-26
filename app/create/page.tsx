@@ -7,7 +7,6 @@ type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
 type Comparator = "Above" | "Below";
 type SettlementToken = "USDC" | "SOL" | "USDT";
 type Sport = "Football" | "Basketball" | "Baseball" | "Hockey" | "Soccer" | "MMA" | "Boxing";
-type League = "NFL" | "NBA" | "MLB" | "NHL" | "EPL" | "UFC" | "Boxing - Major";
 type SportsMarket = "Moneyline" | "Spread" | "Total" | "Draw No Bet" | "Method" | "Round";
 type TotalSide = "Over" | "Under";
 
@@ -57,54 +56,44 @@ const BET_TYPES_BY_SECTOR: Record<Sector, BetType[]> = {
   Sports: ["Threshold", "Time-to-Touch"],
 };
 
-const SPORT_LEAGUES: Record<Sport, League[]> = {
-  Football: ["NFL"],
-  Basketball: ["NBA"],
-  Baseball: ["MLB"],
-  Hockey: ["NHL"],
-  Soccer: ["EPL"],
-  MMA: ["UFC"],
-  Boxing: ["Boxing - Major"],
-};
-
-const SPORTS_EVENTS: Record<League, SportsEvent[]> = {
-  NFL: [
+const SPORTS_EVENTS: Record<Sport, SportsEvent[]> = {
+  Football: [
     { id: "nfl-1", a: "Chiefs", b: "Ravens", startsAt: "Sun 20:20", label: "NFL: Chiefs vs Ravens (Sun 20:20)" },
     { id: "nfl-2", a: "49ers", b: "Cowboys", startsAt: "Sun 16:25", label: "NFL: 49ers vs Cowboys (Sun 16:25)" },
     { id: "nfl-3", a: "Bills", b: "Dolphins", startsAt: "Mon 20:15", label: "NFL: Bills vs Dolphins (Mon 20:15)" },
     { id: "nfl-4", a: "Bengals", b: "Steelers", startsAt: "Thu 20:15", label: "NFL: Bengals vs Steelers (Thu 20:15)" },
   ],
-  NBA: [
+  Basketball: [
     { id: "nba-1", a: "Lakers", b: "Warriors", startsAt: "Tue 03:00", label: "NBA: Lakers vs Warriors (Tue 03:00)" },
     { id: "nba-2", a: "Celtics", b: "Bucks", startsAt: "Wed 01:30", label: "NBA: Celtics vs Bucks (Wed 01:30)" },
     { id: "nba-3", a: "Nuggets", b: "Suns", startsAt: "Fri 02:00", label: "NBA: Nuggets vs Suns (Fri 02:00)" },
     { id: "nba-4", a: "Knicks", b: "Heat", startsAt: "Sat 00:30", label: "NBA: Knicks vs Heat (Sat 00:30)" },
   ],
-  MLB: [
+  Baseball: [
     { id: "mlb-1", a: "Yankees", b: "Red Sox", startsAt: "Tue 19:10", label: "MLB: Yankees vs Red Sox (Tue 19:10)" },
     { id: "mlb-2", a: "Dodgers", b: "Giants", startsAt: "Wed 22:10", label: "MLB: Dodgers vs Giants (Wed 22:10)" },
     { id: "mlb-3", a: "Astros", b: "Mariners", startsAt: "Thu 20:10", label: "MLB: Astros vs Mariners (Thu 20:10)" },
     { id: "mlb-4", a: "Cubs", b: "Cardinals", startsAt: "Fri 14:20", label: "MLB: Cubs vs Cardinals (Fri 14:20)" },
   ],
-  NHL: [
+  Hockey: [
     { id: "nhl-1", a: "Rangers", b: "Bruins", startsAt: "Tue 19:00", label: "NHL: Rangers vs Bruins (Tue 19:00)" },
     { id: "nhl-2", a: "Oilers", b: "Canucks", startsAt: "Wed 21:30", label: "NHL: Oilers vs Canucks (Wed 21:30)" },
     { id: "nhl-3", a: "Maple Leafs", b: "Canadiens", startsAt: "Thu 19:30", label: "NHL: Maple Leafs vs Canadiens (Thu 19:30)" },
     { id: "nhl-4", a: "Avalanche", b: "Stars", startsAt: "Sat 20:00", label: "NHL: Avalanche vs Stars (Sat 20:00)" },
   ],
-  EPL: [
+  Soccer: [
     { id: "epl-1", a: "Arsenal", b: "Chelsea", startsAt: "Sat 17:30", label: "EPL: Arsenal vs Chelsea (Sat 17:30)" },
     { id: "epl-2", a: "Liverpool", b: "Tottenham", startsAt: "Sun 16:30", label: "EPL: Liverpool vs Tottenham (Sun 16:30)" },
     { id: "epl-3", a: "Man City", b: "Newcastle", startsAt: "Sat 12:30", label: "EPL: Man City vs Newcastle (Sat 12:30)" },
     { id: "epl-4", a: "Man United", b: "Brighton", startsAt: "Sun 14:00", label: "EPL: Man United vs Brighton (Sun 14:00)" },
   ],
-  UFC: [
+  MMA: [
     { id: "ufc-1", a: "Fighter A", b: "Fighter B", startsAt: "Sat 22:00", label: "UFC: Fighter A vs Fighter B (Sat 22:00)" },
     { id: "ufc-2", a: "Fighter C", b: "Fighter D", startsAt: "Sat 21:30", label: "UFC: Fighter C vs Fighter D (Sat 21:30)" },
     { id: "ufc-3", a: "Fighter E", b: "Fighter F", startsAt: "Sat 20:45", label: "UFC: Fighter E vs Fighter F (Sat 20:45)" },
     { id: "ufc-4", a: "Fighter G", b: "Fighter H", startsAt: "Sat 20:00", label: "UFC: Fighter G vs Fighter H (Sat 20:00)" },
   ],
-  "Boxing - Major": [
+  Boxing: [
     { id: "box-1", a: "Boxer A", b: "Boxer B", startsAt: "Fri 23:00", label: "Boxing: Boxer A vs Boxer B (Fri 23:00)" },
     { id: "box-2", a: "Boxer C", b: "Boxer D", startsAt: "Sat 22:30", label: "Boxing: Boxer C vs Boxer D (Sat 22:30)" },
     { id: "box-3", a: "Boxer E", b: "Boxer F", startsAt: "Sat 21:45", label: "Boxing: Boxer E vs Boxer F (Sat 21:45)" },
@@ -112,8 +101,8 @@ const SPORTS_EVENTS: Record<League, SportsEvent[]> = {
   ],
 };
 
-const LEAGUE_MARKET_MATRIX: Record<
-  League,
+const SPORT_MARKET_MATRIX: Record<
+  Sport,
   {
     markets: SportsMarket[];
     allowDraw: boolean;
@@ -123,13 +112,13 @@ const LEAGUE_MARKET_MATRIX: Record<
     allowSubmission?: boolean;
   }
 > = {
-  NFL: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
-  NBA: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
-  NHL: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
-  MLB: { markets: ["Moneyline", "Total"], allowDraw: false, totalUnit: "runs" },
-  EPL: { markets: ["Moneyline", "Total", "Draw No Bet"], allowDraw: true, totalUnit: "goals" },
-  UFC: { markets: ["Moneyline", "Method", "Round"], allowDraw: true, totalUnit: "rounds", roundsMax: 5, allowSubmission: true },
-  "Boxing - Major": {
+  Football: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Basketball: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Hockey: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Baseball: { markets: ["Moneyline", "Total"], allowDraw: false, totalUnit: "runs" },
+  Soccer: { markets: ["Moneyline", "Total", "Draw No Bet"], allowDraw: true, totalUnit: "goals" },
+  MMA: { markets: ["Moneyline", "Method", "Round"], allowDraw: true, totalUnit: "rounds", roundsMax: 5, allowSubmission: true },
+  Boxing: {
     markets: ["Moneyline", "Method", "Round"],
     allowDraw: true,
     totalUnit: "rounds",
@@ -296,7 +285,6 @@ export default function BetCreatePage() {
   const [underlyingB, setUnderlyingB] = useState<string>("ETH/USD");
 
   const [sport, setSport] = useState<Sport>("MMA");
-  const [league, setLeague] = useState<League>("UFC");
   const [eventId, setEventId] = useState<string>("");
   const [sportsMarket, setSportsMarket] = useState<SportsMarket>("Moneyline");
   const [pick, setPick] = useState<string>("");
@@ -320,8 +308,8 @@ export default function BetCreatePage() {
   const [title, setTitle] = useState<string>("");
 
   const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
-  const activeLeagueMarkets = useMemo(() => LEAGUE_MARKET_MATRIX[league], [league]);
-  const leagueEvents = useMemo(() => SPORTS_EVENTS[league], [league]);
+  const activeSportMarkets = useMemo(() => SPORT_MARKET_MATRIX[sport], [sport]);
+  const sportEvents = useMemo(() => SPORTS_EVENTS[sport], [sport]);
 
   const toUtcInputValue = (iso: string) => (iso ? iso.slice(0, 16) : "");
   const fromUtcInputValue = (value: string) => (value ? new Date(`${value}:00Z`).toISOString() : "");
@@ -373,10 +361,8 @@ export default function BetCreatePage() {
   }, [betType, sector, underlyingA, underlyingB]);
 
   useEffect(() => {
-    const nextLeague = SPORT_LEAGUES[sport][0];
-    setLeague(nextLeague);
     setEventId("");
-    setSportsMarket(LEAGUE_MARKET_MATRIX[nextLeague].markets[0]);
+    setSportsMarket(SPORT_MARKET_MATRIX[sport].markets[0]);
     setPick("");
     setTotalLine("");
     setSpreadLine("");
@@ -386,21 +372,10 @@ export default function BetCreatePage() {
   }, [sport]);
 
   useEffect(() => {
-    setEventId("");
-    setSportsMarket(LEAGUE_MARKET_MATRIX[league].markets[0]);
-    setPick("");
-    setTotalLine("");
-    setSpreadLine("");
-    setMethodPick("KO/TKO");
-    setRoundPick("1");
-    setTotalSide("Over");
-  }, [league]);
-
-  useEffect(() => {
-    if (!activeLeagueMarkets.markets.includes(sportsMarket)) {
-      setSportsMarket(activeLeagueMarkets.markets[0]);
+    if (!activeSportMarkets.markets.includes(sportsMarket)) {
+      setSportsMarket(activeSportMarkets.markets[0]);
     }
-  }, [activeLeagueMarkets, sportsMarket]);
+  }, [activeSportMarkets, sportsMarket]);
 
   const labelById = useMemo(() => {
     const labels = new Map<string, string>();
@@ -410,7 +385,7 @@ export default function BetCreatePage() {
     return labels;
   }, []);
 
-  const selectedEvent = useMemo(() => leagueEvents.find((event) => event.id === eventId) ?? null, [leagueEvents, eventId]);
+  const selectedEvent = useMemo(() => sportEvents.find((event) => event.id === eventId) ?? null, [sportEvents, eventId]);
 
   const summary = useMemo(() => {
     if (sector === "Sports") {
@@ -420,7 +395,7 @@ export default function BetCreatePage() {
       if (sportsMarket === "Moneyline") {
         sportsCondition = `Winner: ${pick || "Not selected"}`;
       } else if (sportsMarket === "Total") {
-        sportsCondition = `${totalSide} ${totalLine || "?"} ${activeLeagueMarkets.totalUnit}`;
+        sportsCondition = `${totalSide} ${totalLine || "?"} ${activeSportMarkets.totalUnit}`;
       } else if (sportsMarket === "Spread") {
         sportsCondition = `${pick || "Pick side"} ${spreadLine || "?"}`;
       } else if (sportsMarket === "Draw No Bet") {
@@ -440,7 +415,6 @@ export default function BetCreatePage() {
         mode: "sports" as const,
         title: title.trim() || "Untitled bet",
         sport,
-        league,
         event: eventLabel,
         market: sportsMarket,
         condition: sportsCondition,
@@ -490,13 +464,12 @@ export default function BetCreatePage() {
       title: title.trim() || "Untitled bet",
     };
   }, [
-    activeLeagueMarkets.totalUnit,
+    activeSportMarkets.totalUnit,
     betType,
     comparatorA,
     expiryDate,
     expiryPreset,
     labelById,
-    league,
     methodPick,
     oddsPreset,
     oddsX,
@@ -523,24 +496,23 @@ export default function BetCreatePage() {
   const takerStake = makerStake > 0 ? makerStake / safeOddsX : 0;
 
   const isSports = sector === "Sports";
-  const isCombatLeague = league === "UFC" || league === "Boxing - Major";
   const moneylinePickOptions = useMemo(() => {
     const options: string[] = [];
     if (selectedEvent) {
       options.push(selectedEvent.a, selectedEvent.b);
-      if (activeLeagueMarkets.allowDraw && (league === "EPL" || isCombatLeague)) {
+      if (activeSportMarkets.allowDraw) {
         options.push("Draw");
       }
     }
     return options;
-  }, [activeLeagueMarkets.allowDraw, isCombatLeague, league, selectedEvent]);
+  }, [activeSportMarkets.allowDraw, selectedEvent]);
 
   const methodOptions = useMemo(() => {
-    if (!activeLeagueMarkets.allowSubmission) {
+    if (!activeSportMarkets.allowSubmission) {
       return ["KO/TKO", "Decision", "Draw"] as const;
     }
     return ["KO/TKO", "Submission", "Decision", "Draw"] as const;
-  }, [activeLeagueMarkets.allowSubmission]);
+  }, [activeSportMarkets.allowSubmission]);
 
   useEffect(() => {
     if (!moneylinePickOptions.includes(pick)) {
@@ -597,28 +569,17 @@ export default function BetCreatePage() {
                   <>
                     <FieldRow label="Sport" hint="Choose a sport first." right={<Pill>Required</Pill>}>
                       <Select value={sport} onChange={(e) => setSport(e.target.value as Sport)}>
-                        {(Object.keys(SPORT_LEAGUES) as Sport[]).map((sportOption) => (
+                        {(Object.keys(SPORTS_EVENTS) as Sport[]).map((sportOption) => (
                           <option key={sportOption} value={sportOption}>
                             {sportOption}
                           </option>
                         ))}
                       </Select>
                     </FieldRow>
-
-                    <FieldRow label="League" hint="League controls markets and available options." right={<Pill>Required</Pill>}>
-                      <Select value={league} onChange={(e) => setLeague(e.target.value as League)}>
-                        {SPORT_LEAGUES[sport].map((leagueOption) => (
-                          <option key={leagueOption} value={leagueOption}>
-                            {leagueOption}
-                          </option>
-                        ))}
-                      </Select>
-                    </FieldRow>
-
                     <FieldRow label="Event / Game" hint="Pick a matchup from mock data." right={<Pill>Required</Pill>}>
                       <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
                         <option value="">Select an event</option>
-                        {leagueEvents.map((event) => (
+                        {sportEvents.map((event) => (
                           <option key={event.id} value={event.id}>
                             {event.label}
                           </option>
@@ -650,9 +611,9 @@ export default function BetCreatePage() {
               <div className="flex flex-col gap-5">
                 {isSports ? (
                   <>
-                    <FieldRow label="Market" hint="Available markets depend on league." right={<Pill>Required</Pill>}>
+                    <FieldRow label="Market" hint="Available markets depend on sport." right={<Pill>Required</Pill>}>
                       <Select value={sportsMarket} onChange={(e) => setSportsMarket(e.target.value as SportsMarket)}>
-                        {activeLeagueMarkets.markets.map((market) => (
+                        {activeSportMarkets.markets.map((market) => (
                           <option key={market} value={market}>
                             {market}
                           </option>
@@ -687,8 +648,8 @@ export default function BetCreatePage() {
                           </Select>
                         </FieldRow>
 
-                        <FieldRow label={`Total ${activeLeagueMarkets.totalUnit} line`} hint="Set the total line value." right={<Pill>Required</Pill>}>
-                          <Input value={totalLine} onChange={(e) => setTotalLine(e.target.value)} placeholder={`e.g. 2.5 ${activeLeagueMarkets.totalUnit}`} />
+                        <FieldRow label={`Total ${activeSportMarkets.totalUnit} line`} hint="Set the total line value." right={<Pill>Required</Pill>}>
+                          <Input value={totalLine} onChange={(e) => setTotalLine(e.target.value)} placeholder={`e.g. 2.5 ${activeSportMarkets.totalUnit}`} />
                         </FieldRow>
                       </>
                     ) : null}
@@ -773,7 +734,7 @@ export default function BetCreatePage() {
 
                         <FieldRow label="Winning round" hint="Wins in that round (UI only)." right={<Pill>Required</Pill>}>
                           <Select value={roundPick} onChange={(e) => setRoundPick(e.target.value)}>
-                            {Array.from({ length: activeLeagueMarkets.roundsMax ?? 1 }, (_, i) => String(i + 1)).map((round) => (
+                            {Array.from({ length: activeSportMarkets.roundsMax ?? 1 }, (_, i) => String(i + 1)).map((round) => (
                               <option key={round} value={round}>
                                 Round {round}
                               </option>
@@ -939,11 +900,6 @@ export default function BetCreatePage() {
                     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                       <div className="text-xs text-white/55">Sport</div>
                       <div className="mt-1 text-sm text-white/85">{summary.sport}</div>
-                    </div>
-
-                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                      <div className="text-xs text-white/55">League</div>
-                      <div className="mt-1 text-sm text-white/85">{summary.league}</div>
                     </div>
 
                     <div className="rounded-xl border border-white/10 bg-white/5 p-4">
