@@ -10,9 +10,6 @@ export function Nav() {
           <Link href="/" className="hover:text-gold">
             Home
           </Link>
-          <Link href="/bets" className="hover:text-gold">
-            Browse
-          </Link>
           <Link href="/create" className="hover:text-gold">
             Create
           </Link>

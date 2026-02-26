@@ -384,9 +384,6 @@ export default function HomePage() {
           <Link href="/create" className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon">
             Create a bet
           </Link>
-          <Link href="/bets" className="rounded-md border border-white/20 bg-black/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
-            View all bets
-          </Link>
         </div>
       </section>
 
