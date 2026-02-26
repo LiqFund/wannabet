@@ -14,11 +14,12 @@ type HomeBet = {
   betType: BetType;
   title: string;
   amountUsd: number;
+  totalPotUsd?: number;
   timeRemainingLabel: string;
   status: BetStatus;
   creator: { type: 'sol'; id: string } | { type: 'x'; handle: string };
-  makerStakeUsd?: number;
-  takerStakeUsd?: number;
+  makerEscrowUsd?: number;
+  toAcceptUsd?: number;
   oddsText?: string;
   participants?: { left: string; right: string };
 };
@@ -47,12 +48,13 @@ const homeBets: HomeBet[] = [
     sector: 'CRYPTO',
     betType: 'TIME_TO_TOUCH',
     title: 'ETH touches $5k before month end?',
-    amountUsd: 1800000,
+    amountUsd: 900000,
+    totalPotUsd: 900000,
     timeRemainingLabel: '10D',
     status: 'AVAILABLE',
     creator: { type: 'x', handle: 'alpha_trades' },
-    makerStakeUsd: 100000,
-    takerStakeUsd: 25000,
+    makerEscrowUsd: 720000,
+    toAcceptUsd: 180000,
     oddsText: '4–1'
   },
   {
@@ -70,12 +72,13 @@ const homeBets: HomeBet[] = [
     sector: 'EQUITIES',
     betType: 'THRESHOLD',
     title: 'AAPL closes above $215 by Friday close?',
-    amountUsd: 1620000,
+    amountUsd: 500000,
+    totalPotUsd: 500000,
     timeRemainingLabel: '5D',
     status: 'AVAILABLE',
     creator: { type: 'sol', id: 'KHP7PU4rY5xwNcdgQ8m2pN7UL4abEi9T7uQZ8eLmX3P' },
-    makerStakeUsd: 50000,
-    takerStakeUsd: 50000
+    makerEscrowUsd: 250000,
+    toAcceptUsd: 250000
   },
   {
     id: 'equities-nvda-touch',
@@ -102,12 +105,13 @@ const homeBets: HomeBet[] = [
     sector: 'COMMODITIES',
     betType: 'TIME_TO_TOUCH',
     title: 'Gold touches $2,600 before month end?',
-    amountUsd: 1100000,
+    amountUsd: 650000,
+    totalPotUsd: 650000,
     timeRemainingLabel: '13D',
     status: 'AVAILABLE',
     creator: { type: 'x', handle: 'defi_drifter' },
-    makerStakeUsd: 90000,
-    takerStakeUsd: 30000,
+    makerEscrowUsd: 487500,
+    toAcceptUsd: 162500,
     oddsText: '3–1'
   },
   {
@@ -125,12 +129,13 @@ const homeBets: HomeBet[] = [
     sector: 'FX',
     betType: 'THRESHOLD',
     title: 'EUR/USD closes above 1.12 by month end?',
-    amountUsd: 1280000,
+    amountUsd: 1200000,
+    totalPotUsd: 1200000,
     timeRemainingLabel: '12D',
     status: 'AVAILABLE',
     creator: { type: 'sol', id: '4q8S5LhK2pmvVwNzY1RtxJdA7mCFP9sQxH2bzrT6LnYu' },
-    makerStakeUsd: 75000,
-    takerStakeUsd: 75000
+    makerEscrowUsd: 600000,
+    toAcceptUsd: 600000
   },
   {
     id: 'fx-usdjpy-threshold',
@@ -157,12 +162,13 @@ const homeBets: HomeBet[] = [
     sector: 'SPORTS',
     betType: 'OVER_UNDER',
     title: 'Total points over 47.5?',
-    amountUsd: 591000,
+    amountUsd: 500000,
+    totalPotUsd: 500000,
     timeRemainingLabel: '9H',
     status: 'AVAILABLE',
     creator: { type: 'x', handle: 'onchainpulse' },
-    makerStakeUsd: 20000,
-    takerStakeUsd: 10000,
+    makerEscrowUsd: 333333,
+    toAcceptUsd: 166667,
     oddsText: '2–1'
   },
   {
@@ -170,14 +176,29 @@ const homeBets: HomeBet[] = [
     sector: 'SPORTS',
     betType: 'MONEYLINE',
     title: 'Fighter A wins by KO/TKO?',
-    amountUsd: 316000,
+    amountUsd: 2000000,
+    totalPotUsd: 2000000,
     timeRemainingLabel: '3D',
     status: 'AVAILABLE',
     creator: { type: 'sol', id: '7nLeP3gHtKQ9xUaM2vcDfR8yW5sBjLp1Tz6mNdF4CrXe' },
-    makerStakeUsd: 25000,
-    takerStakeUsd: 25000
+    makerEscrowUsd: 1000000,
+    toAcceptUsd: 1000000
   }
 ];
+
+const getAvailableTotalPot = (bet: HomeBet): number => {
+  const makerEscrowUsd = bet.makerEscrowUsd ?? 0;
+  const toAcceptUsd = bet.toAcceptUsd ?? 0;
+  return makerEscrowUsd + toAcceptUsd;
+};
+
+const getHeadlineAmount = (bet: HomeBet): number => {
+  if (bet.status === 'AVAILABLE') {
+    return bet.totalPotUsd ?? getAvailableTotalPot(bet);
+  }
+
+  return bet.amountUsd;
+};
 
 const base58Chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
 
@@ -278,10 +299,10 @@ export default function HomePage() {
 
     return sectorFiltered.sort((a, b) => {
       if (sortOrder === 'SMALLEST') {
-        return a.bet.amountUsd - b.bet.amountUsd;
+        return getHeadlineAmount(a.bet) - getHeadlineAmount(b.bet);
       }
 
-      return b.bet.amountUsd - a.bet.amountUsd;
+      return getHeadlineAmount(b.bet) - getHeadlineAmount(a.bet);
     });
   }, [activeStatus, activeTab, marketCards, sortOrder]);
 
@@ -421,7 +442,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(bet.amountUsd)}</p>
+            <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(getHeadlineAmount(bet))}</p>
             <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
             {bet.status === 'AVAILABLE' && (
               <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-2.5">
@@ -435,9 +456,9 @@ export default function HomePage() {
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
                   <p className="text-white/50">Maker escrow</p>
-                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.makerStakeUsd ?? bet.amountUsd)}</p>
+                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
                   <p className="text-white/50">To accept</p>
-                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.takerStakeUsd ?? bet.makerStakeUsd ?? bet.amountUsd)}</p>
+                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
                 </div>
               </div>
             )}
@@ -455,7 +476,7 @@ export default function HomePage() {
                   }}
                   className="rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
                 >
-                  ACCEPT BET · {formatUsdCompact(bet.takerStakeUsd ?? bet.makerStakeUsd ?? bet.amountUsd)}
+                  ACCEPT BET · {formatUsdCompact(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}
                 </button>
               </div>
             ) : (
