@@ -16,6 +16,10 @@ type HomeBet = {
   amountUsd: number;
   timeRemainingLabel: string;
   status: BetStatus;
+  creator: { type: 'sol'; id: string } | { type: 'x'; handle: string };
+  makerStakeUsd?: number;
+  takerStakeUsd?: number;
+  oddsText?: string;
   participants?: { left: string; right: string };
 };
 
@@ -35,7 +39,8 @@ const homeBets: HomeBet[] = [
     title: 'BTC closes above $95k by Friday close?',
     amountUsd: 4200000,
     timeRemainingLabel: '1D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'solking' }
   },
   {
     id: 'crypto-btc-touch',
@@ -44,7 +49,11 @@ const homeBets: HomeBet[] = [
     title: 'ETH touches $5k before month end?',
     amountUsd: 1800000,
     timeRemainingLabel: '10D',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'x', handle: 'alpha_trades' },
+    makerStakeUsd: 100000,
+    takerStakeUsd: 25000,
+    oddsText: '4–1'
   },
   {
     id: 'equities-relative-performance',
@@ -53,7 +62,8 @@ const homeBets: HomeBet[] = [
     title: 'MSFT outperforms AMZN over 30 days?',
     amountUsd: 950000,
     timeRemainingLabel: '90D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'nftwizard' }
   },
   {
     id: 'equities-aapl-threshold',
@@ -62,7 +72,10 @@ const homeBets: HomeBet[] = [
     title: 'AAPL closes above $215 by Friday close?',
     amountUsd: 1620000,
     timeRemainingLabel: '5D',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'sol', id: 'KHP7PU4rY5xwNcdgQ8m2pN7UL4abEi9T7uQZ8eLmX3P' },
+    makerStakeUsd: 50000,
+    takerStakeUsd: 50000
   },
   {
     id: 'equities-nvda-touch',
@@ -71,7 +84,8 @@ const homeBets: HomeBet[] = [
     title: 'NVDA touches $155 before month end?',
     amountUsd: 1040000,
     timeRemainingLabel: '18D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'chainmax' }
   },
   {
     id: 'finance-spx-threshold',
@@ -80,7 +94,8 @@ const homeBets: HomeBet[] = [
     title: 'WTI crude closes above $85 before quarter end?',
     amountUsd: 2700000,
     timeRemainingLabel: '24D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'sol', id: 'J3svMbcXxURx9pqd7nR4Kta4F7hGH5ekWqk3sX2U1yTZ' }
   },
   {
     id: 'finance-gold-touch',
@@ -89,7 +104,11 @@ const homeBets: HomeBet[] = [
     title: 'Gold touches $2,600 before month end?',
     amountUsd: 1100000,
     timeRemainingLabel: '13D',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'x', handle: 'defi_drifter' },
+    makerStakeUsd: 90000,
+    takerStakeUsd: 30000,
+    oddsText: '3–1'
   },
   {
     id: 'commodities-silver-threshold',
@@ -98,7 +117,8 @@ const homeBets: HomeBet[] = [
     title: 'Silver closes above $34 by month end?',
     amountUsd: 740000,
     timeRemainingLabel: '14D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'mintoracle' }
   },
   {
     id: 'fx-eurusd-threshold',
@@ -107,7 +127,10 @@ const homeBets: HomeBet[] = [
     title: 'EUR/USD closes above 1.12 by month end?',
     amountUsd: 1280000,
     timeRemainingLabel: '12D',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'sol', id: '4q8S5LhK2pmvVwNzY1RtxJdA7mCFP9sQxH2bzrT6LnYu' },
+    makerStakeUsd: 75000,
+    takerStakeUsd: 75000
   },
   {
     id: 'fx-usdjpy-threshold',
@@ -116,7 +139,8 @@ const homeBets: HomeBet[] = [
     title: 'USD/JPY closes below 149 by Friday close?',
     amountUsd: 860000,
     timeRemainingLabel: '4D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'blockrunner' }
   },
   {
     id: 'sports-chiefs-49ers-moneyline',
@@ -125,7 +149,8 @@ const homeBets: HomeBet[] = [
     title: 'Chiefs win vs 49ers?',
     amountUsd: 903000,
     timeRemainingLabel: '5D',
-    status: 'LIVE'
+    status: 'LIVE',
+    creator: { type: 'x', handle: 'satstacker' }
   },
   {
     id: 'sports-total-over-under',
@@ -134,7 +159,11 @@ const homeBets: HomeBet[] = [
     title: 'Total points over 47.5?',
     amountUsd: 591000,
     timeRemainingLabel: '9H',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'x', handle: 'onchainpulse' },
+    makerStakeUsd: 20000,
+    takerStakeUsd: 10000,
+    oddsText: '2–1'
   },
   {
     id: 'sports-fight-ko-tko',
@@ -143,7 +172,10 @@ const homeBets: HomeBet[] = [
     title: 'Fighter A wins by KO/TKO?',
     amountUsd: 316000,
     timeRemainingLabel: '3D',
-    status: 'AVAILABLE'
+    status: 'AVAILABLE',
+    creator: { type: 'sol', id: '7nLeP3gHtKQ9xUaM2vcDfR8yW5sBjLp1Tz6mNdF4CrXe' },
+    makerStakeUsd: 25000,
+    takerStakeUsd: 25000
   }
 ];
 
@@ -186,6 +218,10 @@ function getRandomXUsername() {
 
 function getRandomParticipant(): ParticipantType {
   return Math.random() < 0.5 ? 'sol' : 'x';
+}
+
+function shortenSolAddress(id: string): string {
+  return `${id.slice(0, 6)}...`;
 }
 
 function formatUsdCompact(amountUsd: number): string {
@@ -337,25 +373,43 @@ export default function HomePage() {
         {displayedMarketCards.map(({ bet, participantType, left, right }) => (
           <article key={bet.id} className="hud-card rounded-md border border-white/10 bg-panel p-3">
             <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
-                {participantType === 'sol' ? (
+              <div className="space-y-1">
+                {bet.status === 'AVAILABLE' ? (
                   <>
-                    {left} <span className="mx-1 text-rose-700">VS</span> {right}
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Created by</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
+                      {bet.creator.type === 'x' ? (
+                        <span className="inline-flex items-center gap-1 align-baseline">
+                          <XIcon />
+                          <span>@{bet.creator.handle}</span>
+                        </span>
+                      ) : (
+                        shortenSolAddress(bet.creator.id)
+                      )}
+                    </p>
                   </>
                 ) : (
-                  <>
-                    <span className="inline-flex items-center gap-1 align-baseline">
-                      <XIcon />
-                      <span>{left}</span>
-                    </span>{' '}
-                    <span className="mx-1 text-rose-700">VS</span>{' '}
-                    <span className="inline-flex items-center gap-1 align-baseline">
-                      <XIcon />
-                      <span>{right}</span>
-                    </span>
-                  </>
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
+                    {participantType === 'sol' ? (
+                      <>
+                        {left} <span className="mx-1 text-rose-700">VS</span> {right}
+                      </>
+                    ) : (
+                      <>
+                        <span className="inline-flex items-center gap-1 align-baseline">
+                          <XIcon />
+                          <span>{left}</span>
+                        </span>{' '}
+                        <span className="mx-1 text-rose-700">VS</span>{' '}
+                        <span className="inline-flex items-center gap-1 align-baseline">
+                          <XIcon />
+                          <span>{right}</span>
+                        </span>
+                      </>
+                    )}
+                  </p>
                 )}
-              </p>
+              </div>
               <span
                 className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${
                   bet.status === 'LIVE'
@@ -369,11 +423,47 @@ export default function HomePage() {
 
             <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(bet.amountUsd)}</p>
             <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
+            {bet.status === 'AVAILABLE' && (
+              <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-2.5">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Accept terms</p>
+                  {bet.oddsText && (
+                    <span className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan">
+                      Odds {bet.oddsText}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
+                  <p className="text-white/50">Maker escrow</p>
+                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.makerStakeUsd ?? bet.amountUsd)}</p>
+                  <p className="text-white/50">To accept</p>
+                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.takerStakeUsd ?? bet.makerStakeUsd ?? bet.amountUsd)}</p>
+                </div>
+              </div>
+            )}
             <div className="mt-3 border-t border-white/10" />
-            <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.08em]">
-              <p className="text-white/45">Time remaining</p>
-              <p className="text-white/80">{bet.timeRemainingLabel}</p>
-            </div>
+            {bet.status === 'AVAILABLE' ? (
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <div className="text-[11px] uppercase tracking-[0.08em]">
+                  <p className="text-white/45">Time remaining</p>
+                  <p className="mt-1 text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.alert('Accept flow coming soon');
+                  }}
+                  className="rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
+                >
+                  ACCEPT BET · {formatUsdCompact(bet.takerStakeUsd ?? bet.makerStakeUsd ?? bet.amountUsd)}
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.08em]">
+                <p className="text-white/45">Time remaining</p>
+                <p className="text-white/80">{bet.timeRemainingLabel}</p>
+              </div>
+            )}
           </article>
         ))}
       </section>
