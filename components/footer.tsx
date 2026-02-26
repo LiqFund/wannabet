@@ -6,7 +6,6 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-4 [&_a]:transition [&_a]:hover:text-gold">
           <Link href="/">Home</Link>
-          <Link href="/bets">Browse bets</Link>
           <Link href="/create">Create bet</Link>
         </div>
         <p>
