@@ -6,9 +6,20 @@ type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Sports";
 type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
 type Comparator = "Above" | "Below";
 type SettlementToken = "USDC" | "SOL" | "USDT";
+type Sport = "Football" | "Basketball" | "Baseball" | "Hockey" | "Soccer" | "MMA" | "Boxing";
+type SportsMarket = "Moneyline" | "Spread" | "Total" | "Draw No Bet" | "Method" | "Round";
+type TotalSide = "Over" | "Under";
 
 type Underlying = {
   id: string;
+  label: string;
+};
+
+type SportsEvent = {
+  id: string;
+  a: string;
+  b: string;
+  startsAt: string;
   label: string;
 };
 
@@ -45,12 +56,92 @@ const BET_TYPES_BY_SECTOR: Record<Sector, BetType[]> = {
   Sports: ["Threshold", "Time-to-Touch"],
 };
 
+const SPORTS_EVENTS: Record<Sport, SportsEvent[]> = {
+  Football: [
+    { id: "nfl-1", a: "Chiefs", b: "Ravens", startsAt: "Sun 20:20", label: "NFL: Chiefs vs Ravens (Sun 20:20)" },
+    { id: "nfl-2", a: "49ers", b: "Cowboys", startsAt: "Sun 16:25", label: "NFL: 49ers vs Cowboys (Sun 16:25)" },
+    { id: "nfl-3", a: "Bills", b: "Dolphins", startsAt: "Mon 20:15", label: "NFL: Bills vs Dolphins (Mon 20:15)" },
+    { id: "nfl-4", a: "Bengals", b: "Steelers", startsAt: "Thu 20:15", label: "NFL: Bengals vs Steelers (Thu 20:15)" },
+  ],
+  Basketball: [
+    { id: "nba-1", a: "Lakers", b: "Warriors", startsAt: "Tue 03:00", label: "NBA: Lakers vs Warriors (Tue 03:00)" },
+    { id: "nba-2", a: "Celtics", b: "Bucks", startsAt: "Wed 01:30", label: "NBA: Celtics vs Bucks (Wed 01:30)" },
+    { id: "nba-3", a: "Nuggets", b: "Suns", startsAt: "Fri 02:00", label: "NBA: Nuggets vs Suns (Fri 02:00)" },
+    { id: "nba-4", a: "Knicks", b: "Heat", startsAt: "Sat 00:30", label: "NBA: Knicks vs Heat (Sat 00:30)" },
+  ],
+  Baseball: [
+    { id: "mlb-1", a: "Yankees", b: "Red Sox", startsAt: "Tue 19:10", label: "MLB: Yankees vs Red Sox (Tue 19:10)" },
+    { id: "mlb-2", a: "Dodgers", b: "Giants", startsAt: "Wed 22:10", label: "MLB: Dodgers vs Giants (Wed 22:10)" },
+    { id: "mlb-3", a: "Astros", b: "Mariners", startsAt: "Thu 20:10", label: "MLB: Astros vs Mariners (Thu 20:10)" },
+    { id: "mlb-4", a: "Cubs", b: "Cardinals", startsAt: "Fri 14:20", label: "MLB: Cubs vs Cardinals (Fri 14:20)" },
+  ],
+  Hockey: [
+    { id: "nhl-1", a: "Rangers", b: "Bruins", startsAt: "Tue 19:00", label: "NHL: Rangers vs Bruins (Tue 19:00)" },
+    { id: "nhl-2", a: "Oilers", b: "Canucks", startsAt: "Wed 21:30", label: "NHL: Oilers vs Canucks (Wed 21:30)" },
+    { id: "nhl-3", a: "Maple Leafs", b: "Canadiens", startsAt: "Thu 19:30", label: "NHL: Maple Leafs vs Canadiens (Thu 19:30)" },
+    { id: "nhl-4", a: "Avalanche", b: "Stars", startsAt: "Sat 20:00", label: "NHL: Avalanche vs Stars (Sat 20:00)" },
+  ],
+  Soccer: [
+    { id: "epl-1", a: "Arsenal", b: "Chelsea", startsAt: "Sat 17:30", label: "EPL: Arsenal vs Chelsea (Sat 17:30)" },
+    { id: "epl-2", a: "Liverpool", b: "Tottenham", startsAt: "Sun 16:30", label: "EPL: Liverpool vs Tottenham (Sun 16:30)" },
+    { id: "epl-3", a: "Man City", b: "Newcastle", startsAt: "Sat 12:30", label: "EPL: Man City vs Newcastle (Sat 12:30)" },
+    { id: "epl-4", a: "Man United", b: "Brighton", startsAt: "Sun 14:00", label: "EPL: Man United vs Brighton (Sun 14:00)" },
+  ],
+  MMA: [
+    { id: "ufc-1", a: "Fighter A", b: "Fighter B", startsAt: "Sat 22:00", label: "UFC: Fighter A vs Fighter B (Sat 22:00)" },
+    { id: "ufc-2", a: "Fighter C", b: "Fighter D", startsAt: "Sat 21:30", label: "UFC: Fighter C vs Fighter D (Sat 21:30)" },
+    { id: "ufc-3", a: "Fighter E", b: "Fighter F", startsAt: "Sat 20:45", label: "UFC: Fighter E vs Fighter F (Sat 20:45)" },
+    { id: "ufc-4", a: "Fighter G", b: "Fighter H", startsAt: "Sat 20:00", label: "UFC: Fighter G vs Fighter H (Sat 20:00)" },
+  ],
+  Boxing: [
+    { id: "box-1", a: "Boxer A", b: "Boxer B", startsAt: "Fri 23:00", label: "Boxing: Boxer A vs Boxer B (Fri 23:00)" },
+    { id: "box-2", a: "Boxer C", b: "Boxer D", startsAt: "Sat 22:30", label: "Boxing: Boxer C vs Boxer D (Sat 22:30)" },
+    { id: "box-3", a: "Boxer E", b: "Boxer F", startsAt: "Sat 21:45", label: "Boxing: Boxer E vs Boxer F (Sat 21:45)" },
+    { id: "box-4", a: "Boxer G", b: "Boxer H", startsAt: "Sun 00:15", label: "Boxing: Boxer G vs Boxer H (Sun 00:15)" },
+  ],
+};
+
+const SPORT_MARKET_MATRIX: Record<
+  Sport,
+  {
+    markets: SportsMarket[];
+    allowDraw: boolean;
+    spread?: boolean;
+    totalUnit: string;
+    roundsMax?: number;
+    allowSubmission?: boolean;
+  }
+> = {
+  Football: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Basketball: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Hockey: { markets: ["Moneyline", "Spread", "Total"], allowDraw: false, spread: true, totalUnit: "points" },
+  Baseball: { markets: ["Moneyline", "Total"], allowDraw: false, totalUnit: "runs" },
+  Soccer: { markets: ["Moneyline", "Total", "Draw No Bet"], allowDraw: true, totalUnit: "goals" },
+  MMA: { markets: ["Moneyline", "Method", "Round"], allowDraw: true, totalUnit: "rounds", roundsMax: 5, allowSubmission: true },
+  Boxing: {
+    markets: ["Moneyline", "Method", "Round"],
+    allowDraw: true,
+    totalUnit: "rounds",
+    roundsMax: 12,
+    allowSubmission: false,
+  },
+};
+
 const SECTOR_OPTIONS: Sector[] = ["Crypto", "Equities", "Commodities", "FX", "Sports"];
 
 const BET_TYPE_DESC: Record<BetType, string> = {
   Threshold: "Price above or below a level at expiry",
   "Relative Performance": "A outperforms B over a period",
   "Time-to-Touch": "A touches a level before expiry",
+};
+
+const SPORTS_MARKET_DESC: Record<SportsMarket, string> = {
+  Moneyline: "Pick the outright winner of the event.",
+  Spread: "Pick the winner after applying the handicap spread.",
+  Total: "Pick whether combined scoring lands over or under a total line.",
+  "Draw No Bet": "Pick a side; if the match ends in a draw, this is treated as a refund (UI only).",
+  Method: "Pick the winner and method of victory.",
+  Round: "Pick the winner and the exact round they win in.",
 };
 
 function clsx(...xs: Array<string | false | null | undefined>) {
@@ -193,6 +284,16 @@ export default function BetCreatePage() {
   const [underlyingA, setUnderlyingA] = useState<string>("BTC/USD");
   const [underlyingB, setUnderlyingB] = useState<string>("ETH/USD");
 
+  const [sport, setSport] = useState<Sport>("MMA");
+  const [eventId, setEventId] = useState<string>("");
+  const [sportsMarket, setSportsMarket] = useState<SportsMarket>("Moneyline");
+  const [pick, setPick] = useState<string>("");
+  const [totalLine, setTotalLine] = useState<string>("");
+  const [totalSide, setTotalSide] = useState<TotalSide>("Over");
+  const [spreadLine, setSpreadLine] = useState<string>("");
+  const [methodPick, setMethodPick] = useState<"KO/TKO" | "Submission" | "Decision" | "Draw">("KO/TKO");
+  const [roundPick, setRoundPick] = useState<string>("1");
+
   const [expiryPreset, setExpiryPreset] = useState<"7D" | "30D" | "90D" | "Custom">("90D");
   const [expiryDate, setExpiryDate] = useState<string>("");
 
@@ -207,6 +308,8 @@ export default function BetCreatePage() {
   const [title, setTitle] = useState<string>("");
 
   const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
+  const activeSportMarkets = useMemo(() => SPORT_MARKET_MATRIX[sport], [sport]);
+  const sportEvents = useMemo(() => SPORTS_EVENTS[sport], [sport]);
 
   const toUtcInputValue = (iso: string) => (iso ? iso.slice(0, 16) : "");
   const fromUtcInputValue = (value: string) => (value ? new Date(`${value}:00Z`).toISOString() : "");
@@ -257,6 +360,24 @@ export default function BetCreatePage() {
     }
   }, [betType, sector, underlyingA, underlyingB]);
 
+  useEffect(() => {
+    setEventId("");
+    setSportsMarket(SPORT_MARKET_MATRIX[sport].markets[0]);
+    setPick("");
+    setTotalLine("");
+    setSpreadLine("");
+    setMethodPick("KO/TKO");
+    setRoundPick("1");
+    setTotalSide("Over");
+  }, [sport]);
+
+
+  useEffect(() => {
+    if (!activeSportMarkets.markets.includes(sportsMarket)) {
+      setSportsMarket(activeSportMarkets.markets[0]);
+    }
+  }, [activeSportMarkets, sportsMarket]);
+
   const labelById = useMemo(() => {
     const labels = new Map<string, string>();
     Object.values(UNDERLYINGS_BY_SECTOR)
@@ -265,7 +386,46 @@ export default function BetCreatePage() {
     return labels;
   }, []);
 
+  const selectedEvent = useMemo(() => sportEvents.find((event) => event.id === eventId) ?? null, [sportEvents, eventId]);
+
   const summary = useMemo(() => {
+    if (sector === "Sports") {
+      const eventLabel = selectedEvent ? `${selectedEvent.a} vs ${selectedEvent.b} (${selectedEvent.startsAt})` : "No event selected";
+      let sportsCondition = "";
+
+      if (sportsMarket === "Moneyline") {
+        sportsCondition = `Winner: ${pick || "Not selected"}`;
+      } else if (sportsMarket === "Total") {
+        sportsCondition = `${totalSide} ${totalLine || "?"} ${activeSportMarkets.totalUnit}`;
+      } else if (sportsMarket === "Spread") {
+        sportsCondition = `${pick || "Pick side"} ${spreadLine || "?"}`;
+      } else if (sportsMarket === "Draw No Bet") {
+        sportsCondition = `Draw No Bet: ${pick || "Not selected"}`;
+      } else if (sportsMarket === "Method") {
+        sportsCondition = `${pick || "Pick fighter"} by ${methodPick}`;
+      } else if (sportsMarket === "Round") {
+        sportsCondition = `${pick || "Pick fighter"} in round ${roundPick}`;
+      }
+
+      const maker = parseAmount(stakeAmount);
+      const rawX = oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
+      const x = rawX > 0 ? rawX : 1;
+      const taker = maker > 0 ? maker / x : 0;
+
+      return {
+        mode: "sports" as const,
+        title: title.trim() || "Untitled bet",
+        sport,
+        event: eventLabel,
+        market: sportsMarket,
+        condition: sportsCondition,
+        resolution: "Resolves at final result",
+        makerEscrow: `${maker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+        opponentRequired: `${taker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+        odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
+      };
+    }
+
     const A = labelById.get(underlyingA) ?? underlyingA;
     const B = labelById.get(underlyingB) ?? underlyingB;
 
@@ -294,6 +454,7 @@ export default function BetCreatePage() {
     const taker = maker > 0 ? maker / x : 0;
 
     return {
+      mode: "financial" as const,
       sector,
       betType,
       expiry,
@@ -303,17 +464,81 @@ export default function BetCreatePage() {
       odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
       title: title.trim() || "Untitled bet",
     };
-  }, [betType, comparatorA, expiryDate, expiryPreset, labelById, oddsPreset, oddsX, sector, stakeAmount, stakeToken, strikeA, title, underlyingA, underlyingB]);
+  }, [
+    activeSportMarkets.totalUnit,
+    betType,
+    comparatorA,
+    expiryDate,
+    expiryPreset,
+    labelById,
+    methodPick,
+    oddsPreset,
+    oddsX,
+    pick,
+    roundPick,
+    sector,
+    selectedEvent,
+    sport,
+    sportsMarket,
+    spreadLine,
+    stakeAmount,
+    stakeToken,
+    strikeA,
+    title,
+    totalLine,
+    totalSide,
+    underlyingA,
+    underlyingB,
+  ]);
 
   const makerStake = parseAmount(stakeAmount);
   const selectedOddsX = oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
   const safeOddsX = selectedOddsX > 0 ? selectedOddsX : 1;
   const takerStake = makerStake > 0 ? makerStake / safeOddsX : 0;
 
+  const isSports = sector === "Sports";
+  const isCombatSport = sport === "MMA" || sport === "Boxing";
+  const moneylinePickOptions = useMemo(() => {
+    const options: string[] = [];
+    if (selectedEvent) {
+      options.push(selectedEvent.a, selectedEvent.b);
+      if (activeSportMarkets.allowDraw && (sport === "Soccer" || isCombatSport)) {
+        options.push("Draw");
+      }
+    }
+    return options;
+  }, [activeSportMarkets.allowDraw, isCombatSport, selectedEvent, sport]);
+
+  const methodOptions = useMemo(() => {
+    if (!activeSportMarkets.allowSubmission) {
+      return ["KO/TKO", "Decision", "Draw"] as const;
+    }
+    return ["KO/TKO", "Submission", "Decision", "Draw"] as const;
+  }, [activeSportMarkets.allowSubmission]);
+
+  useEffect(() => {
+    if (!moneylinePickOptions.includes(pick)) {
+      setPick("");
+    }
+  }, [moneylinePickOptions, pick]);
+
+  const sportsMissingItems = useMemo(() => {
+    if (!isSports) return [] as string[];
+    const missing: string[] = [];
+    if (!eventId) missing.push("select an event");
+    if (["Moneyline", "Spread", "Draw No Bet", "Method", "Round"].includes(sportsMarket) && !pick) {
+      missing.push("choose a pick");
+    }
+    if (sportsMarket === "Total" && !totalLine.trim()) missing.push("enter total line");
+    if (sportsMarket === "Spread" && !spreadLine.trim()) missing.push("enter spread line");
+    return missing;
+  }, [eventId, isSports, pick, spreadLine, sportsMarket, totalLine]);
+
+  const createDisabled = isSports ? sportsMissingItems.length > 0 : false;
+
   const shellStyle: React.CSSProperties = {
     minHeight: "100vh",
-    background:
-      "radial-gradient(900px 560px at 50% 18%, rgba(212,175,55,0.12), rgba(0,0,0,0) 60%), #000",
+    background: "radial-gradient(900px 560px at 50% 18%, rgba(212,175,55,0.12), rgba(0,0,0,0) 60%), #000",
     color: "white",
   };
 
@@ -323,9 +548,7 @@ export default function BetCreatePage() {
         <div className="mb-6 flex flex-col gap-2">
           <div className="text-xs tracking-wide text-white/55">Wanna Bet? • Create</div>
           <h1 className="text-2xl font-semibold text-white md:text-3xl">Create a bet</h1>
-          <div className="text-sm text-white/60">
-            Frontend-only slip. Choose a sector, pick a market, set conditions, then preview the contract.
-          </div>
+          <div className="text-sm text-white/60">Frontend-only slip. Choose a sector, pick a market, set conditions, then preview the contract.</div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_0.75fr]">
@@ -344,134 +567,288 @@ export default function BetCreatePage() {
                   <SectorTabs value={sector} onChange={setSector} />
                 </FieldRow>
 
-                <FieldRow label="Search underlyings" hint="Filter by ticker or name.">
-                  <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder='Try "btc", "spy", "gold", "dxy"...'
-                  />
-                </FieldRow>
-
-                <FieldRow
-                  label="Underlying A"
-                  hint="Primary market used in the bet condition."
-                  right={<Pill>Required</Pill>}
-                >
-                  <Select value={underlyingA} onChange={(e) => setUnderlyingA(e.target.value)}>
-                    {aOptions.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.label}
-                      </option>
-                    ))}
-                  </Select>
-                </FieldRow>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="2) Bet type" subtitle="Step 2">
-              <div className="flex flex-col gap-5">
-                <FieldRow label="Bet structure" hint="Pick the contract form you want." right={<Pill>Required</Pill>}>
-                  <Select value={betType} onChange={(e) => setBetType(e.target.value as BetType)}>
-                    {allowedBetTypes.map((b) => (
-                      <option key={b} value={b}>
-                        {b}
-                      </option>
-                    ))}
-                  </Select>
-                </FieldRow>
-
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-sm font-medium text-white/85">What this means</div>
-                  <div className="mt-1 text-sm text-white/60">{BET_TYPE_DESC[betType]}</div>
-                </div>
-              </div>
-            </SectionCard>
-
-            <SectionCard title="3) Parameters" subtitle="Step 3">
-              <div className="flex flex-col gap-5">
-                {canUseB ? (
-                  <FieldRow
-                    label="Underlying B"
-                    hint="Required for relative performance bets. Must differ from Underlying A."
-                    right={<Pill>Required</Pill>}
-                  >
-                    <Select value={underlyingB} onChange={(e) => setUnderlyingB(e.target.value)}>
-                      {bOptions.map((u) => (
-                        <option key={u.id} value={u.id}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </FieldRow>
-                ) : null}
-
-                {betType === "Threshold" && (
+                {isSports ? (
                   <>
-                    <FieldRow label="Direction" hint="Above or below the target.">
-                      <Select value={comparatorA} onChange={(e) => setComparatorA(e.target.value as Comparator)}>
-                        <option value="Above">Above</option>
-                        <option value="Below">Below</option>
+                    <FieldRow label="Sport" hint="Choose a sport first." right={<Pill>Required</Pill>}>
+                      <Select value={sport} onChange={(e) => setSport(e.target.value as Sport)}>
+                        {(Object.keys(SPORT_MARKET_MATRIX) as Sport[]).map((sportOption) => (
+                          <option key={sportOption} value={sportOption}>
+                            {sportOption}
+                          </option>
+                        ))}
                       </Select>
                     </FieldRow>
-                    <FieldRow label="Strike level" hint="Numeric level evaluated at expiry.">
-                      <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
+
+                    <FieldRow label="Event / Game" hint="Pick a matchup from mock data." right={<Pill>Required</Pill>}>
+                      <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
+                        <option value="">Select an event</option>
+                        {sportEvents.map((event) => (
+                          <option key={event.id} value={event.id}>
+                            {event.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FieldRow>
+                  </>
+                ) : (
+                  <>
+                    <FieldRow label="Search underlyings" hint="Filter by ticker or name.">
+                      <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Try "btc", "spy", "gold", "dxy"...' />
+                    </FieldRow>
+
+                    <FieldRow label="Underlying A" hint="Primary market used in the bet condition." right={<Pill>Required</Pill>}>
+                      <Select value={underlyingA} onChange={(e) => setUnderlyingA(e.target.value)}>
+                        {aOptions.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.label}
+                          </option>
+                        ))}
+                      </Select>
                     </FieldRow>
                   </>
                 )}
-
-                {betType === "Time-to-Touch" && (
-                  <FieldRow label="Touch level" hint="Any touch before expiry resolves YES.">
-                    <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
-                  </FieldRow>
-                )}
-
-                {betType === "Relative Performance" && (
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-sm text-white/80">
-                      Outperformance is based on percent change from start to end of the selected period.
-                    </div>
-                  </div>
-                )}
               </div>
             </SectionCard>
 
-            <SectionCard title="4) Timing" subtitle="Step 4">
+            <SectionCard title={isSports ? "2) Bet market" : "2) Bet type"} subtitle="Step 2">
               <div className="flex flex-col gap-5">
-                <FieldRow label="Expiry preset" hint="Preset keeps your slip evergreen.">
-                  <div className="flex flex-wrap gap-2">
-                    {(["7D", "30D", "90D", "Custom"] as const).map((p) => (
-                      <MiniButton
-                        key={p}
-                        onClick={() => setExpiryPreset(p)}
-                        aria-pressed={expiryPreset === p}
-                        style={
-                          expiryPreset === p
-                            ? { borderColor: "rgba(212,175,55,0.55)", background: "rgba(212,175,55,0.10)" }
-                            : undefined
-                        }
-                      >
-                        {p === "Custom" ? "Custom" : p}
-                      </MiniButton>
-                    ))}
-                  </div>
-                </FieldRow>
+                {isSports ? (
+                  <>
+                    <FieldRow label="Market" hint="Available markets depend on sport." right={<Pill>Required</Pill>}>
+                      <Select value={sportsMarket} onChange={(e) => setSportsMarket(e.target.value as SportsMarket)}>
+                        {activeSportMarkets.markets.map((market) => (
+                          <option key={market} value={market}>
+                            {market}
+                          </option>
+                        ))}
+                      </Select>
+                    </FieldRow>
 
-                {expiryPreset === "Custom" ? (
-                  <FieldRow label="Expiry date" hint="Frontend only. Any date format is accepted.">
-                    <div className="space-y-2">
-                      <Input
-                        type="datetime-local"
-                        value={toUtcInputValue(expiryDate)}
-                        onChange={(e) => setExpiryDate(fromUtcInputValue(e.target.value))}
-                      />
-                      <div className="text-xs text-white/55">Stored/displayed as UTC</div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-sm font-medium text-white/85">What this means</div>
+                      <div className="mt-1 text-sm text-white/60">{SPORTS_MARKET_DESC[sportsMarket]}</div>
                     </div>
-                  </FieldRow>
-                ) : null}
+
+                    {sportsMarket === "Moneyline" ? (
+                      <FieldRow label="Pick / Outcome" hint="Choose the winner." right={<Pill>Required</Pill>}>
+                        <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
+                          <option value="">Select an outcome</option>
+                          {moneylinePickOptions.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </Select>
+                      </FieldRow>
+                    ) : null}
+
+                    {sportsMarket === "Total" ? (
+                      <>
+                        <FieldRow label="Total side" hint="Choose over or under." right={<Pill>Required</Pill>}>
+                          <Select value={totalSide} onChange={(e) => setTotalSide(e.target.value as TotalSide)}>
+                            <option value="Over">Over</option>
+                            <option value="Under">Under</option>
+                          </Select>
+                        </FieldRow>
+
+                        <FieldRow label={`Total ${activeSportMarkets.totalUnit} line`} hint="Set the total line value." right={<Pill>Required</Pill>}>
+                          <Input value={totalLine} onChange={(e) => setTotalLine(e.target.value)} placeholder={`e.g. 2.5 ${activeSportMarkets.totalUnit}`} />
+                        </FieldRow>
+                      </>
+                    ) : null}
+
+                    {sportsMarket === "Spread" ? (
+                      <>
+                        <FieldRow label="Pick / Outcome" hint="Pick the side against the spread." right={<Pill>Required</Pill>}>
+                          <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
+                            <option value="">Select a side</option>
+                            {selectedEvent ? (
+                              <>
+                                <option value={selectedEvent.a}>{selectedEvent.a}</option>
+                                <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                              </>
+                            ) : null}
+                          </Select>
+                        </FieldRow>
+
+                        <FieldRow label="Spread line" hint="Pick the side against the spread." right={<Pill>Required</Pill>}>
+                          <Input value={spreadLine} onChange={(e) => setSpreadLine(e.target.value)} placeholder="e.g. -3.5" />
+                        </FieldRow>
+                      </>
+                    ) : null}
+
+                    {sportsMarket === "Draw No Bet" ? (
+                      <>
+                        <FieldRow label="Pick / Outcome" hint="Draw refunds (UI only)." right={<Pill>Required</Pill>}>
+                          <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
+                            <option value="">Select a side</option>
+                            {selectedEvent ? (
+                              <>
+                                <option value={selectedEvent.a}>{selectedEvent.a}</option>
+                                <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                              </>
+                            ) : null}
+                          </Select>
+                        </FieldRow>
+
+                        <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">Draw refunds (UI only).</div>
+                      </>
+                    ) : null}
+
+                    {sportsMarket === "Method" ? (
+                      <>
+                        <FieldRow label="Pick winner" hint="Choose who wins first." right={<Pill>Required</Pill>}>
+                          <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
+                            <option value="">Select winner</option>
+                            {selectedEvent ? (
+                              <>
+                                <option value={selectedEvent.a}>{selectedEvent.a}</option>
+                                <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                              </>
+                            ) : null}
+                          </Select>
+                        </FieldRow>
+
+                        <FieldRow label="Method" hint="How the winner gets it done." right={<Pill>Required</Pill>}>
+                          <Select value={methodPick} onChange={(e) => setMethodPick(e.target.value as typeof methodPick)}>
+                            {methodOptions.map((method) => (
+                              <option key={method} value={method}>
+                                {method}
+                              </option>
+                            ))}
+                          </Select>
+                        </FieldRow>
+                      </>
+                    ) : null}
+
+                    {sportsMarket === "Round" ? (
+                      <>
+                        <FieldRow label="Pick winner" hint="Choose who wins first." right={<Pill>Required</Pill>}>
+                          <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
+                            <option value="">Select winner</option>
+                            {selectedEvent ? (
+                              <>
+                                <option value={selectedEvent.a}>{selectedEvent.a}</option>
+                                <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                              </>
+                            ) : null}
+                          </Select>
+                        </FieldRow>
+
+                        <FieldRow label="Winning round" hint="Wins in that round (UI only)." right={<Pill>Required</Pill>}>
+                          <Select value={roundPick} onChange={(e) => setRoundPick(e.target.value)}>
+                            {Array.from({ length: activeSportMarkets.roundsMax ?? 1 }, (_, i) => String(i + 1)).map((round) => (
+                              <option key={round} value={round}>
+                                Round {round}
+                              </option>
+                            ))}
+                          </Select>
+                        </FieldRow>
+                      </>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <FieldRow label="Bet structure" hint="Pick the contract form you want." right={<Pill>Required</Pill>}>
+                      <Select value={betType} onChange={(e) => setBetType(e.target.value as BetType)}>
+                        {allowedBetTypes.map((b) => (
+                          <option key={b} value={b}>
+                            {b}
+                          </option>
+                        ))}
+                      </Select>
+                    </FieldRow>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-sm font-medium text-white/85">What this means</div>
+                      <div className="mt-1 text-sm text-white/60">{BET_TYPE_DESC[betType]}</div>
+                    </div>
+                  </>
+                )}
               </div>
             </SectionCard>
 
-            <SectionCard title="5) Stake" subtitle="Step 5">
+            {isSports ? (
+              <SectionCard title="3) Notes" subtitle="Step 3">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
+                  No live updates. Bets resolve once final result is known. UI only.
+                </div>
+              </SectionCard>
+            ) : (
+              <>
+                <SectionCard title="3) Parameters" subtitle="Step 3">
+                  <div className="flex flex-col gap-5">
+                    {canUseB ? (
+                      <FieldRow label="Underlying B" hint="Required for relative performance bets. Must differ from Underlying A." right={<Pill>Required</Pill>}>
+                        <Select value={underlyingB} onChange={(e) => setUnderlyingB(e.target.value)}>
+                          {bOptions.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {u.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </FieldRow>
+                    ) : null}
+
+                    {betType === "Threshold" && (
+                      <>
+                        <FieldRow label="Direction" hint="Above or below the target.">
+                          <Select value={comparatorA} onChange={(e) => setComparatorA(e.target.value as Comparator)}>
+                            <option value="Above">Above</option>
+                            <option value="Below">Below</option>
+                          </Select>
+                        </FieldRow>
+                        <FieldRow label="Strike level" hint="Numeric level evaluated at expiry.">
+                          <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
+                        </FieldRow>
+                      </>
+                    )}
+
+                    {betType === "Time-to-Touch" && (
+                      <FieldRow label="Touch level" hint="Any touch before expiry resolves YES.">
+                        <Input value={strikeA} onChange={(e) => setStrikeA(e.target.value)} placeholder="e.g. 100000" />
+                      </FieldRow>
+                    )}
+
+                    {betType === "Relative Performance" && (
+                      <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                        <div className="text-sm text-white/80">Outperformance is based on percent change from start to end of the selected period.</div>
+                      </div>
+                    )}
+                  </div>
+                </SectionCard>
+
+                <SectionCard title="4) Timing" subtitle="Step 4">
+                  <div className="flex flex-col gap-5">
+                    <FieldRow label="Expiry preset" hint="Preset keeps your slip evergreen.">
+                      <div className="flex flex-wrap gap-2">
+                        {(["7D", "30D", "90D", "Custom"] as const).map((p) => (
+                          <MiniButton
+                            key={p}
+                            onClick={() => setExpiryPreset(p)}
+                            aria-pressed={expiryPreset === p}
+                            style={expiryPreset === p ? { borderColor: "rgba(212,175,55,0.55)", background: "rgba(212,175,55,0.10)" } : undefined}
+                          >
+                            {p === "Custom" ? "Custom" : p}
+                          </MiniButton>
+                        ))}
+                      </div>
+                    </FieldRow>
+
+                    {expiryPreset === "Custom" ? (
+                      <FieldRow label="Expiry date" hint="Frontend only. Any date format is accepted.">
+                        <div className="space-y-2">
+                          <Input type="datetime-local" value={toUtcInputValue(expiryDate)} onChange={(e) => setExpiryDate(fromUtcInputValue(e.target.value))} />
+                          <div className="text-xs text-white/55">Stored/displayed as UTC</div>
+                        </div>
+                      </FieldRow>
+                    ) : null}
+                  </div>
+                </SectionCard>
+              </>
+            )}
+
+            <SectionCard title={isSports ? "4) Stake" : "5) Stake"} subtitle={isSports ? "Step 4" : "Step 5"}>
               <div className="flex flex-col gap-5">
                 <FieldRow label="Your stake (Maker escrow)" hint="Amount you escrow as maker (UI only).">
                   <Input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="e.g. 100000" />
@@ -482,20 +859,13 @@ export default function BetCreatePage() {
                     <Select value={oddsPreset} onChange={(e) => setOddsPreset(e.target.value as (typeof oddsPresets)[number])}>
                       {oddsPresets.map((preset) => (
                         <option key={preset} value={preset}>
-                          {preset}
+                          {preset === "Custom" ? "Custom" : preset}
                         </option>
                       ))}
                     </Select>
+
                     {oddsPreset === "Custom" ? (
-                      <Input
-                        type="number"
-                        min={1}
-                        max={100}
-                        step="any"
-                        value={oddsX}
-                        onChange={(e) => setOddsX(e.target.value)}
-                        placeholder="Enter X for X-1 odds"
-                      />
+                      <Input type="number" min={1} max={100} step="any" value={oddsX} onChange={(e) => setOddsX(e.target.value)} placeholder="Enter X for X-1 odds" />
                     ) : null}
                   </div>
                 </FieldRow>
@@ -524,31 +894,61 @@ export default function BetCreatePage() {
                   <div className="text-xs tracking-wide text-white/55">Preview</div>
                   <div className="mt-1 text-lg font-semibold text-white">{summary.title}</div>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
-                  UI only
-                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">UI only</div>
               </div>
 
               <div className="mt-5 space-y-3">
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Sector</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.sector}</div>
-                </div>
+                {summary.mode === "sports" ? (
+                  <>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Sport</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.sport}</div>
+                    </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Type</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.betType}</div>
-                </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Condition</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.condition}</div>
-                </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Event</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.event}</div>
+                    </div>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-xs text-white/55">Expiry</div>
-                  <div className="mt-1 text-sm text-white/85">{summary.expiry}</div>
-                </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Market</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.market}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Pick / Condition</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.condition}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Resolution</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.resolution}</div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Sector</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.sector}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Type</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.betType}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Condition</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.condition}</div>
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                      <div className="text-xs text-white/55">Expiry</div>
+                      <div className="mt-1 text-sm text-white/85">{summary.expiry}</div>
+                    </div>
+                  </>
+                )}
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="text-xs text-white/55">Maker escrow</div>
@@ -568,12 +968,13 @@ export default function BetCreatePage() {
 
               <div className="mt-5">
                 <button
-                  className="w-full rounded-2xl border px-5 py-3 text-sm font-semibold"
+                  className="w-full rounded-2xl border px-5 py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     borderColor: "rgba(212,175,55,0.35)",
                     background: "rgba(212,175,55,0.10)",
                     color: gold,
                   }}
+                  disabled={createDisabled}
                   onClick={() => {
                     alert("Frontend-only preview. Hook up create/escrow later.");
                   }}
@@ -582,7 +983,9 @@ export default function BetCreatePage() {
                 </button>
 
                 <div className="mt-3 text-xs text-white/45">
-                  This button does nothing permanent. It’s only here to show the intended flow.
+                  {isSports && sportsMissingItems.length > 0
+                    ? `Missing: ${sportsMissingItems.join(", ")}.`
+                    : "This button does nothing permanent. It’s only here to show the intended flow."}
                 </div>
               </div>
             </div>
@@ -660,9 +1063,7 @@ export default function BetCreatePage() {
           </div>
         </div>
 
-        <div className="mt-10 text-center text-xs text-white/35">
-          Bet slip UI only. No wallet, no escrow, no settlement logic included.
-        </div>
+        <div className="mt-10 text-center text-xs text-white/35">Bet slip UI only. No wallet, no escrow, no settlement logic included.</div>
       </div>
     </div>
   );
