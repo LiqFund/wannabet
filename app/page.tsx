@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
-type BetCategory = 'CRYPTO' | 'FINANCE' | 'SPORTS' | 'FX';
+type Sector = 'CRYPTO' | 'EQUITIES' | 'COMMODITIES' | 'FX' | 'SPORTS';
+type ActiveTab = 'ALL' | Sector;
 type BetType = 'THRESHOLD' | 'TIME_TO_TOUCH' | 'RELATIVE_PERFORMANCE' | 'MONEYLINE' | 'OVER_UNDER';
 
 type HomeBet = {
   id: string;
-  category: Exclude<BetCategory, 'FX'>;
+  sector: Sector;
   betType: BetType;
   title: string;
   amountUsd: number;
@@ -20,50 +21,68 @@ type HomeBet = {
 type ParticipantType = 'sol' | 'x';
 type SortOrder = 'BIGGEST' | 'SMALLEST';
 
-const primaryCategories: Array<HomeBet['category']> = ['CRYPTO', 'FINANCE', 'SPORTS'];
+const primaryCategories: ActiveTab[] = ['ALL', 'CRYPTO', 'EQUITIES', 'COMMODITIES', 'FX', 'SPORTS'];
 
 const quickFilters: string[] = [];
 
 const homeBets: HomeBet[] = [
   {
     id: 'crypto-btc-threshold',
-    category: 'CRYPTO',
+    sector: 'CRYPTO',
     betType: 'THRESHOLD',
-    title: 'BTC above $95k by Friday close?',
+    title: 'BTC closes above $95k by Friday close?',
     amountUsd: 4200000,
     timeRemainingLabel: '1D',
     isLive: true
   },
   {
     id: 'crypto-btc-touch',
-    category: 'CRYPTO',
+    sector: 'CRYPTO',
     betType: 'TIME_TO_TOUCH',
-    title: 'BTC hits $120k before month end?',
+    title: 'ETH touches $5k before month end?',
     amountUsd: 1800000,
     timeRemainingLabel: '10D',
     isLive: true
   },
   {
-    id: 'crypto-btc-eth-relative',
-    category: 'CRYPTO',
+    id: 'equities-relative-performance',
+    sector: 'EQUITIES',
     betType: 'RELATIVE_PERFORMANCE',
-    title: 'BTC outperforms ETH over 90 days?',
+    title: 'MSFT outperforms AMZN over 30 days?',
     amountUsd: 950000,
     timeRemainingLabel: '90D',
     isLive: true
   },
   {
-    id: 'finance-spx-threshold',
-    category: 'FINANCE',
+    id: 'equities-aapl-threshold',
+    sector: 'EQUITIES',
     betType: 'THRESHOLD',
-    title: 'S&P 500 closes above 6,200 before quarter end?',
+    title: 'AAPL closes above $215 by Friday close?',
+    amountUsd: 1620000,
+    timeRemainingLabel: '5D',
+    isLive: true
+  },
+  {
+    id: 'equities-nvda-touch',
+    sector: 'EQUITIES',
+    betType: 'TIME_TO_TOUCH',
+    title: 'NVDA touches $155 before month end?',
+    amountUsd: 1040000,
+    timeRemainingLabel: '18D',
+    isLive: true
+  },
+  {
+    id: 'finance-spx-threshold',
+    sector: 'COMMODITIES',
+    betType: 'THRESHOLD',
+    title: 'WTI crude closes above $85 before quarter end?',
     amountUsd: 2700000,
     timeRemainingLabel: '24D',
     isLive: true
   },
   {
     id: 'finance-gold-touch',
-    category: 'FINANCE',
+    sector: 'COMMODITIES',
     betType: 'TIME_TO_TOUCH',
     title: 'Gold touches $2,600 before month end?',
     amountUsd: 1100000,
@@ -71,17 +90,35 @@ const homeBets: HomeBet[] = [
     isLive: true
   },
   {
-    id: 'finance-dxy-threshold',
-    category: 'FINANCE',
+    id: 'commodities-silver-threshold',
+    sector: 'COMMODITIES',
     betType: 'THRESHOLD',
-    title: 'DXY closes above 106 by month end?',
+    title: 'Silver closes above $34 by month end?',
     amountUsd: 740000,
     timeRemainingLabel: '14D',
     isLive: true
   },
   {
+    id: 'fx-eurusd-threshold',
+    sector: 'FX',
+    betType: 'THRESHOLD',
+    title: 'EUR/USD closes above 1.12 by month end?',
+    amountUsd: 1280000,
+    timeRemainingLabel: '12D',
+    isLive: true
+  },
+  {
+    id: 'fx-usdjpy-threshold',
+    sector: 'FX',
+    betType: 'THRESHOLD',
+    title: 'USD/JPY closes below 149 by Friday close?',
+    amountUsd: 860000,
+    timeRemainingLabel: '4D',
+    isLive: true
+  },
+  {
     id: 'sports-chiefs-49ers-moneyline',
-    category: 'SPORTS',
+    sector: 'SPORTS',
     betType: 'MONEYLINE',
     title: 'Chiefs win vs 49ers?',
     amountUsd: 903000,
@@ -90,7 +127,7 @@ const homeBets: HomeBet[] = [
   },
   {
     id: 'sports-total-over-under',
-    category: 'SPORTS',
+    sector: 'SPORTS',
     betType: 'OVER_UNDER',
     title: 'Total points over 47.5?',
     amountUsd: 591000,
@@ -98,10 +135,10 @@ const homeBets: HomeBet[] = [
     isLive: true
   },
   {
-    id: 'sports-fighter-moneyline',
-    category: 'SPORTS',
+    id: 'sports-fight-ko-tko',
+    sector: 'SPORTS',
     betType: 'MONEYLINE',
-    title: 'Fighter A wins (draw void)?',
+    title: 'Fighter A wins by KO/TKO?',
     amountUsd: 316000,
     timeRemainingLabel: '3D',
     isLive: true
@@ -170,7 +207,7 @@ function XIcon() {
 }
 
 export default function HomePage() {
-  const [activeCategory, setActiveCategory] = useState<HomeBet['category']>('CRYPTO');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('ALL');
   const [sortOrder, setSortOrder] = useState<SortOrder>('BIGGEST');
 
   const marketCards = useMemo(
@@ -197,16 +234,16 @@ export default function HomePage() {
   );
 
   const displayedMarketCards = useMemo(() => {
-    const filtered = marketCards.filter(({ bet }) => bet.category === activeCategory);
+    const visible = activeTab === 'ALL' ? marketCards : marketCards.filter(({ bet }) => bet.sector === activeTab);
 
-    return filtered.sort((a, b) => {
+    return visible.sort((a, b) => {
       if (sortOrder === 'SMALLEST') {
         return a.bet.amountUsd - b.bet.amountUsd;
       }
 
       return b.bet.amountUsd - a.bet.amountUsd;
     });
-  }, [activeCategory, marketCards, sortOrder]);
+  }, [activeTab, marketCards, sortOrder]);
 
   return (
     <div className="space-y-6">
@@ -229,9 +266,9 @@ export default function HomePage() {
               <button
                 key={category}
                 type="button"
-                onClick={() => setActiveCategory(category)}
+                onClick={() => setActiveTab(category)}
                 className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
-                  activeCategory === category
+                  activeTab === category
                     ? 'border-cyan/45 bg-cyan/10 text-cyan'
                     : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
                 }`}
