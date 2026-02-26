@@ -378,7 +378,7 @@ export default function HomePage() {
         <div>
           <p className="hud-label text-white/50">Create your own bet</p>
           <h2 className="mt-2 text-2xl font-black uppercase">Peer to Peer betting, Challenge anyone 1v1</h2>
-          <p className="mt-2 max-w-xl text-sm text-white/70">Define the terms, pick oracle resolution, and lock collateral in a non-custodial contract.</p>
+          <p className="mt-2 max-w-xl text-sm text-white/70">Define the terms, pick oracle resolution, and lock collateral in a non-custodial contract. Winner takes all.</p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 md:mt-0">
           <Link href="/create" className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon">
