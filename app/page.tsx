@@ -365,7 +365,7 @@ export default function HomePage() {
             <select
               value={sortOrder}
               onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-              className="rounded-md border border-white/15 bg-black/20 py-1 pl-2 pr-8 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
+              className="rounded-md border border-white/15 bg-black/20 py-1 pl-2 pr-10 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
             >
               <option value="BIGGEST">Biggest</option>
               <option value="SMALLEST">Smallest</option>
