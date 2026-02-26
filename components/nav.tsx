@@ -3,7 +3,7 @@ import { Logo } from './logo';
 
 export function Nav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-white/15 bg-bg/95">
+    <header className="border-b border-white/15 bg-bg/95">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 md:px-6 md:py-5">
         <Logo />
         <nav className="hidden gap-5 text-sm text-white/90 md:flex [&_a]:tracking-wide [&_a]:transition">
