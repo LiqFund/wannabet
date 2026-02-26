@@ -9,7 +9,7 @@ export function Footer() {
           <Link href="/create">Create bet</Link>
         </div>
         <p>
-          Oracle-only escrow contracts. No custody. For informational purposes. Jurisdiction restrictions may apply.
+          Peer to Peer betting. Wanna Bet? 2026
         </p>
       </div>
     </footer>
