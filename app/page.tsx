@@ -1,77 +1,110 @@
-import Link from 'next/link';
+'use client';
 
-type Market = {
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+
+type BetCategory = 'CRYPTO' | 'FINANCE' | 'SPORTS' | 'FX';
+type BetType = 'THRESHOLD' | 'TIME_TO_TOUCH' | 'RELATIVE_PERFORMANCE' | 'MONEYLINE' | 'OVER_UNDER';
+
+type HomeBet = {
+  id: string;
+  category: Exclude<BetCategory, 'FX'>;
+  betType: BetType;
   title: string;
-  volume: string;
-  closes: string;
+  amountUsd: number;
+  timeRemainingLabel: string;
+  isLive?: boolean;
+  participants?: { left: string; right: string };
 };
 
 type ParticipantType = 'sol' | 'x';
+type SortOrder = 'BIGGEST' | 'SMALLEST';
 
-const primaryCategories = ['Crypto', 'Finance', 'Sports'];
+const primaryCategories: Array<HomeBet['category']> = ['CRYPTO', 'FINANCE', 'SPORTS'];
 
 const quickFilters: string[] = [];
 
-const markets: Market[] = [
+const homeBets: HomeBet[] = [
   {
+    id: 'crypto-btc-threshold',
+    category: 'CRYPTO',
+    betType: 'THRESHOLD',
     title: 'BTC above $95k by Friday close?',
-    volume: '$4.2M Vol',
-    closes: 'Closes in 1d'
+    amountUsd: 4200000,
+    timeRemainingLabel: '1D',
+    isLive: true
   },
   {
+    id: 'crypto-btc-touch',
+    category: 'CRYPTO',
+    betType: 'TIME_TO_TOUCH',
+    title: 'BTC hits $120k before month end?',
+    amountUsd: 1800000,
+    timeRemainingLabel: '10D',
+    isLive: true
+  },
+  {
+    id: 'crypto-btc-eth-relative',
+    category: 'CRYPTO',
+    betType: 'RELATIVE_PERFORMANCE',
+    title: 'BTC outperforms ETH over 90 days?',
+    amountUsd: 950000,
+    timeRemainingLabel: '90D',
+    isLive: true
+  },
+  {
+    id: 'finance-spx-threshold',
+    category: 'FINANCE',
+    betType: 'THRESHOLD',
     title: 'S&P 500 closes above 6,200 before quarter end?',
-    volume: '$2.7M Vol',
-    closes: 'Closes in 24d'
+    amountUsd: 2700000,
+    timeRemainingLabel: '24D',
+    isLive: true
   },
   {
-    title: 'US inflation print below 2.8% next release?',
-    volume: '$2.1M Vol',
-    closes: 'Closes in 11d'
-  },
-  {
-    title: 'Will Ethereum ETF inflows top $1B this month?',
-    volume: '$1.8M Vol',
-    closes: 'Closes in 10d'
-  },
-  {
-    title: 'Will the Euro outperform USD this month?',
-    volume: '$398k Vol',
-    closes: 'Closes in 8d'
-  },
-  {
+    id: 'finance-gold-touch',
+    category: 'FINANCE',
+    betType: 'TIME_TO_TOUCH',
     title: 'Gold touches $2,600 before month end?',
-    volume: '$1.1M Vol',
-    closes: 'Closes in 13d'
+    amountUsd: 1100000,
+    timeRemainingLabel: '13D',
+    isLive: true
   },
   {
-    title: 'Premier League winner confirmed by March 31?',
-    volume: '$672k Vol',
-    closes: 'Closes in 18d'
+    id: 'finance-dxy-threshold',
+    category: 'FINANCE',
+    betType: 'THRESHOLD',
+    title: 'DXY closes above 106 by month end?',
+    amountUsd: 740000,
+    timeRemainingLabel: '14D',
+    isLive: true
   },
   {
-    title: 'NCAA upset in top 10 this weekend?',
-    volume: '$153k Vol',
-    closes: 'Closes in 2d'
+    id: 'sports-chiefs-49ers-moneyline',
+    category: 'SPORTS',
+    betType: 'MONEYLINE',
+    title: 'Chiefs win vs 49ers?',
+    amountUsd: 903000,
+    timeRemainingLabel: '5D',
+    isLive: true
   },
   {
-    title: 'Everton to score 2+ goals this match?',
-    volume: '$214k Vol',
-    closes: 'Closes in 7h'
+    id: 'sports-total-over-under',
+    category: 'SPORTS',
+    betType: 'OVER_UNDER',
+    title: 'Total points over 47.5?',
+    amountUsd: 591000,
+    timeRemainingLabel: '9H',
+    isLive: true
   },
   {
-    title: 'Lakers cover -4.5 in next game?',
-    volume: '$591k Vol',
-    closes: 'Closes in 9h'
-  },
-  {
-    title: 'Djokovic reaches final this tournament?',
-    volume: '$316k Vol',
-    closes: 'Closes in 3d'
-  },
-  {
-    title: 'Chiefs win by 7+ next game?',
-    volume: '$903k Vol',
-    closes: 'Closes in 5d'
+    id: 'sports-fighter-moneyline',
+    category: 'SPORTS',
+    betType: 'MONEYLINE',
+    title: 'Fighter A wins (draw void)?',
+    amountUsd: 316000,
+    timeRemainingLabel: '3D',
+    isLive: true
   }
 ];
 
@@ -116,6 +149,18 @@ function getRandomParticipant(): ParticipantType {
   return Math.random() < 0.5 ? 'sol' : 'x';
 }
 
+function formatUsdCompact(amountUsd: number): string {
+  if (amountUsd >= 1_000_000) {
+    return `$${(amountUsd / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  }
+
+  if (amountUsd >= 1_000) {
+    return `$${Math.round(amountUsd / 1_000)}k`;
+  }
+
+  return `$${amountUsd}`;
+}
+
 function XIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3 w-3 fill-current text-white/60">
@@ -125,15 +170,43 @@ function XIcon() {
 }
 
 export default function HomePage() {
-  const marketCards = markets.map((market) => {
-    const participantType = getRandomParticipant();
-    return {
-      market,
-      participantType,
-      left: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername(),
-      right: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername()
-    };
-  });
+  const [activeCategory, setActiveCategory] = useState<HomeBet['category']>('CRYPTO');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('BIGGEST');
+
+  const marketCards = useMemo(
+    () =>
+      homeBets.map((bet) => {
+        if (bet.participants) {
+          return {
+            bet,
+            participantType: 'x' as const,
+            left: bet.participants.left,
+            right: bet.participants.right
+          };
+        }
+
+        const participantType = getRandomParticipant();
+        return {
+          bet,
+          participantType,
+          left: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername(),
+          right: participantType === 'sol' ? generateShortSolAddress() : getRandomXUsername()
+        };
+      }),
+    []
+  );
+
+  const displayedMarketCards = useMemo(() => {
+    const filtered = marketCards.filter(({ bet }) => bet.category === activeCategory);
+
+    return filtered.sort((a, b) => {
+      if (sortOrder === 'SMALLEST') {
+        return a.bet.amountUsd - b.bet.amountUsd;
+      }
+
+      return b.bet.amountUsd - a.bet.amountUsd;
+    });
+  }, [activeCategory, marketCards, sortOrder]);
 
   return (
     <div className="space-y-6">
@@ -150,20 +223,35 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {primaryCategories.map((category, index) => (
-            <button
-              key={category}
-              type="button"
-              className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
-                index === 0
-                  ? 'border-cyan/45 bg-cyan/10 text-cyan'
-                  : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
-              }`}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {primaryCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory(category)}
+                className={`rounded-md border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.1em] ${
+                  activeCategory === category
+                    ? 'border-cyan/45 bg-cyan/10 text-cyan'
+                    : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+
+          <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
+            Sort
+            <select
+              value={sortOrder}
+              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+              className="rounded-md border border-white/15 bg-black/20 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
             >
-              {category}
-            </button>
-          ))}
+              <option value="BIGGEST">Biggest</option>
+              <option value="SMALLEST">Smallest</option>
+            </select>
+          </label>
         </div>
       </section>
 
@@ -184,8 +272,8 @@ export default function HomePage() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {marketCards.map(({ market, participantType, left, right }) => (
-          <article key={market.title} className="hud-card rounded-md border border-white/10 bg-panel p-3">
+        {displayedMarketCards.map(({ bet, participantType, left, right }) => (
+          <article key={bet.id} className="hud-card rounded-md border border-white/10 bg-panel p-3">
             <div className="flex items-start justify-between gap-2">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
                 {participantType === 'sol' ? (
@@ -206,15 +294,17 @@ export default function HomePage() {
                   </>
                 )}
               </p>
-              <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">LIVE</span>
+              {bet.isLive ? (
+                <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">LIVE</span>
+              ) : null}
             </div>
 
-            <p className="mt-3 text-3xl font-black text-white">{market.volume.replace(' Vol', '')}</p>
-            <p className="mt-2 line-clamp-2 text-sm text-white/80">{market.title}</p>
+            <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(bet.amountUsd)}</p>
+            <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
             <div className="mt-3 border-t border-white/10" />
             <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.08em]">
               <p className="text-white/45">Time remaining</p>
-              <p className="text-white/80">{market.closes.replace('Closes in ', '')}</p>
+              <p className="text-white/80">{bet.timeRemainingLabel}</p>
             </div>
           </article>
         ))}
