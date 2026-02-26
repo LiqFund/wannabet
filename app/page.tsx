@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type Sector = 'CRYPTO' | 'EQUITIES' | 'COMMODITIES' | 'FX' | 'SPORTS';
 type ActiveTab = 'ALL' | Sector;
@@ -269,6 +269,30 @@ export default function HomePage() {
   const [activeStatus, setActiveStatus] = useState<ActiveStatus>('LIVE');
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALL');
   const [sortOrder, setSortOrder] = useState<SortOrder>('BIGGEST');
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!sortMenuRef.current?.contains(event.target as Node)) {
+        setIsSortOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsSortOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
 
   const marketCards = useMemo(
     () =>
@@ -360,17 +384,63 @@ export default function HomePage() {
             </div>
           </div>
 
-          <label className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
-            Sort
-            <select
-              value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
-              className="rounded-md border border-white/15 bg-black/20 px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 outline-none hover:border-cyan/30"
-            >
-              <option value="BIGGEST">Biggest</option>
-              <option value="SMALLEST">Smallest</option>
-            </select>
-          </label>
+          <div className="flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
+            <span>Sort</span>
+            <div className="relative" ref={sortMenuRef}>
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isSortOpen}
+                onClick={() => setIsSortOpen((prev) => !prev)}
+                className="flex min-w-[122px] items-center justify-between rounded-md border border-white/15 bg-black/25 py-1.5 pl-3 pr-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 shadow-[0_0_0_0_rgba(34,211,238,0)] transition hover:border-cyan/30 hover:bg-black/35 focus-visible:border-cyan/50 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(34,211,238,0.18)]"
+              >
+                <span>{sortOrder === 'BIGGEST' ? 'Biggest' : 'Smallest'}</span>
+                <svg
+                  className={`ml-4 h-3.5 w-3.5 text-white/70 transition-transform ${isSortOpen ? 'rotate-180' : ''}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0l-4.25-4.51a.75.75 0 0 1 .02-1.06Z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+
+              {isSortOpen ? (
+                <div
+                  role="listbox"
+                  aria-label="Sort bets"
+                  className="absolute right-0 z-20 mt-1.5 w-full min-w-[150px] overflow-hidden rounded-md border border-white/15 bg-[#0b0f1f] p-1 shadow-[0_12px_24px_rgba(0,0,0,0.45)]"
+                >
+                  {(['BIGGEST', 'SMALLEST'] as SortOrder[]).map((option) => {
+                    const isSelected = sortOrder === option;
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        onClick={() => {
+                          setSortOrder(option);
+                          setIsSortOpen(false);
+                        }}
+                        className={`flex w-full items-center rounded-sm px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] transition ${
+                          isSelected
+                            ? 'bg-cyan/15 text-cyan'
+                            : 'text-white/85 hover:bg-white/8 hover:text-white'
+                        }`}
+                      >
+                        {option === 'BIGGEST' ? 'Biggest' : 'Smallest'}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
       </section>
 
