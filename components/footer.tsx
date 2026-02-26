@@ -9,7 +9,7 @@ export function Footer() {
           <Link href="/create">Create bet</Link>
         </div>
         <p>
-          Peer to Peer betting. © Wanna Bet? 2026
+          Peer to Peer betting. Wanna Bet? © 2026
         </p>
       </div>
     </footer>
