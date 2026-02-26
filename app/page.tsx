@@ -332,7 +332,7 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
-      <section className="hud-panel overflow-hidden rounded-xl border border-white/10 bg-panel p-3 md:p-4">
+      <section className="hud-panel overflow-visible rounded-xl border border-white/10 bg-panel p-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-3">
           {quickFilters.map((filter) => (
             <button
@@ -386,13 +386,13 @@ export default function HomePage() {
 
           <div className="flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/60">
             <span>Sort</span>
-            <div className="relative" ref={sortMenuRef}>
+            <div className="relative min-w-[140px]" ref={sortMenuRef}>
               <button
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={isSortOpen}
                 onClick={() => setIsSortOpen((prev) => !prev)}
-                className="flex min-w-[122px] items-center justify-between rounded-md border border-white/15 bg-black/25 py-1.5 pl-3 pr-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 shadow-[0_0_0_0_rgba(34,211,238,0)] transition hover:border-cyan/30 hover:bg-black/35 focus-visible:border-cyan/50 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(34,211,238,0.18)]"
+                className="flex w-full items-center justify-between rounded-md border border-white/15 bg-black/25 py-1.5 pl-3 pr-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-white/90 shadow-[0_0_0_0_rgba(34,211,238,0)] transition hover:border-cyan/30 hover:bg-black/35 focus-visible:border-cyan/50 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(34,211,238,0.18)]"
               >
                 <span>{sortOrder === 'BIGGEST' ? 'Biggest' : 'Smallest'}</span>
                 <svg
@@ -413,7 +413,7 @@ export default function HomePage() {
                 <div
                   role="listbox"
                   aria-label="Sort bets"
-                  className="absolute right-0 z-20 mt-1.5 w-full min-w-[150px] overflow-hidden rounded-md border border-white/15 bg-[#0b0f1f] p-1 shadow-[0_12px_24px_rgba(0,0,0,0.45)]"
+                  className="absolute right-0 top-full z-[80] mt-2 w-full overflow-hidden rounded-lg border border-white/15 bg-[#0b0f1f] p-1.5 shadow-[0_18px_36px_rgba(0,0,0,0.55)] backdrop-blur"
                 >
                   {(['BIGGEST', 'SMALLEST'] as SortOrder[]).map((option) => {
                     const isSelected = sortOrder === option;
@@ -427,7 +427,7 @@ export default function HomePage() {
                           setSortOrder(option);
                           setIsSortOpen(false);
                         }}
-                        className={`flex w-full items-center rounded-sm px-2.5 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] transition ${
+                        className={`flex w-full items-center rounded-md px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-[0.08em] transition ${
                           isSelected
                             ? 'bg-cyan/15 text-cyan'
                             : 'text-white/85 hover:bg-white/8 hover:text-white'
