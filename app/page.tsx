@@ -376,13 +376,13 @@ export default function HomePage() {
 
       <section className="rounded-xl border border-white/10 bg-panel p-5 md:flex md:items-center md:justify-between">
         <div>
-          <p className="hud-label text-white/50">Build your own market</p>
+          <p className="hud-label text-white/50">Create your own bet</p>
           <h2 className="mt-2 text-2xl font-black uppercase">Peer to Peer betting, Challenge anyone 1v1</h2>
           <p className="mt-2 max-w-xl text-sm text-white/70">Define the terms, pick oracle resolution, and lock collateral in a non-custodial contract.</p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 md:mt-0">
           <Link href="/create" className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon">
-            Create a market
+            Create a bet
           </Link>
           <Link href="/bets" className="rounded-md border border-white/20 bg-black/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-white/85">
             View all bets
