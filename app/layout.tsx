@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     description: 'Head to head bets with immutable terms and oracle settlement. Winner takes all.',
     type: 'website',
     url: 'https://wannabet.you',
-    siteName: 'WANNABET'
+    siteName: 'Wanna Bet?'
   }
 };
 
