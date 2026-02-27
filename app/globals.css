@@ -290,6 +290,47 @@ body::after {
     pointer-events: none;
   }
 
+
+
+  .filters-wrapper {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .status-filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .category-filters {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .filter-divider {
+    height: 24px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0 18px;
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .filters-wrapper {
+      flex-wrap: nowrap;
+      gap: 0;
+    }
+
+    .filter-divider {
+      display: block;
+    }
+  }
   .hud-card {
     position: relative;
   }
