@@ -43,4 +43,6 @@ export const formatUSDC = (value: number): string => {
   return `${sign}${trimTrailingZeros(absolute.toFixed(2))} USDC`;
 };
 
+export const formatUsdcCompact = (value: number): string => formatUSDC(value);
+
 export const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
