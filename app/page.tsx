@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { formatUSDC } from '@/lib/format';
 
 type Sector = 'CRYPTO' | 'EQUITIES' | 'COMMODITIES' | 'FX' | 'SPORTS';
 type ActiveTab = 'ALL' | Sector;
@@ -37,7 +38,7 @@ const homeBets: HomeBet[] = [
     id: 'crypto-btc-threshold',
     sector: 'CRYPTO',
     betType: 'THRESHOLD',
-    title: 'BTC closes above $95k by Friday close?',
+    title: 'BTC closes above 95k by Friday close?',
     amountUsd: 4200000,
     timeRemainingLabel: '1D',
     status: 'LIVE',
@@ -47,7 +48,7 @@ const homeBets: HomeBet[] = [
     id: 'crypto-btc-touch',
     sector: 'CRYPTO',
     betType: 'TIME_TO_TOUCH',
-    title: 'ETH touches $5k before month end?',
+    title: 'ETH touches 5k before month end?',
     amountUsd: 900000,
     totalPotUsd: 900000,
     timeRemainingLabel: '10D',
@@ -71,7 +72,7 @@ const homeBets: HomeBet[] = [
     id: 'equities-aapl-threshold',
     sector: 'EQUITIES',
     betType: 'THRESHOLD',
-    title: 'AAPL closes above $215 by Friday close?',
+    title: 'AAPL closes above 215 by Friday close?',
     amountUsd: 500000,
     totalPotUsd: 500000,
     timeRemainingLabel: '5D',
@@ -84,7 +85,7 @@ const homeBets: HomeBet[] = [
     id: 'equities-nvda-touch',
     sector: 'EQUITIES',
     betType: 'TIME_TO_TOUCH',
-    title: 'NVDA touches $155 before month end?',
+    title: 'NVDA touches 155 before month end?',
     amountUsd: 1040000,
     timeRemainingLabel: '18D',
     status: 'LIVE',
@@ -94,7 +95,7 @@ const homeBets: HomeBet[] = [
     id: 'finance-spx-threshold',
     sector: 'COMMODITIES',
     betType: 'THRESHOLD',
-    title: 'WTI crude closes above $85 before quarter end?',
+    title: 'WTI crude closes above 85 before quarter end?',
     amountUsd: 2700000,
     timeRemainingLabel: '24D',
     status: 'LIVE',
@@ -104,7 +105,7 @@ const homeBets: HomeBet[] = [
     id: 'finance-gold-touch',
     sector: 'COMMODITIES',
     betType: 'TIME_TO_TOUCH',
-    title: 'Gold touches $2,600 before month end?',
+    title: 'Gold touches 2,600 before month end?',
     amountUsd: 650000,
     totalPotUsd: 650000,
     timeRemainingLabel: '13D',
@@ -118,7 +119,7 @@ const homeBets: HomeBet[] = [
     id: 'commodities-silver-threshold',
     sector: 'COMMODITIES',
     betType: 'THRESHOLD',
-    title: 'Silver closes above $34 by month end?',
+    title: 'Silver closes above 34 by month end?',
     amountUsd: 740000,
     timeRemainingLabel: '14D',
     status: 'LIVE',
@@ -243,18 +244,6 @@ function getRandomParticipant(): ParticipantType {
 
 function shortenSolAddress(id: string): string {
   return `${id.slice(0, 6)}...`;
-}
-
-function formatUsdCompact(amountUsd: number): string {
-  if (amountUsd >= 1_000_000) {
-    return `$${(amountUsd / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
-  }
-
-  if (amountUsd >= 1_000) {
-    return `$${Math.round(amountUsd / 1_000)}k`;
-  }
-
-  return `$${amountUsd}`;
 }
 
 function XIcon() {
@@ -509,7 +498,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <p className="mt-3 text-3xl font-black text-white">{formatUsdCompact(getHeadlineAmount(bet))}</p>
+            <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
             <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
             {bet.status === 'AVAILABLE' && (
               <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-2.5">
@@ -523,9 +512,9 @@ export default function HomePage() {
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
                   <p className="text-white/50">Maker escrow</p>
-                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
+                  <p className="font-semibold text-white/85">{formatUSDC(bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
                   <p className="text-white/50">To accept</p>
-                  <p className="font-semibold text-white/85">{formatUsdCompact(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
+                  <p className="font-semibold text-white/85">{formatUSDC(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}</p>
                 </div>
               </div>
             )}
@@ -543,7 +532,7 @@ export default function HomePage() {
                   }}
                   className="rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
                 >
-                  ACCEPT BET · {formatUsdCompact(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}
+                  ACCEPT BET • {formatUSDC(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}
                 </button>
               </div>
             ) : (

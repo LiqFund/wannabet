@@ -21,4 +21,26 @@ export const formatTemplate = (bet: BetRecord) => {
   }
 };
 
+const trimTrailingZeros = (value: string) => value.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+
+export const formatUSDC = (value: number): string => {
+  const amount = Number.isFinite(value) ? value : 0;
+  const sign = amount < 0 ? '-' : '';
+  const absolute = Math.abs(amount);
+
+  if (absolute >= 1_000_000_000) {
+    return `${sign}${trimTrailingZeros((absolute / 1_000_000_000).toFixed(2))}B USDC`;
+  }
+
+  if (absolute >= 1_000_000) {
+    return `${sign}${trimTrailingZeros((absolute / 1_000_000).toFixed(2))}M USDC`;
+  }
+
+  if (absolute >= 1_000) {
+    return `${sign}${trimTrailingZeros((absolute / 1_000).toFixed(2))}k USDC`;
+  }
+
+  return `${sign}${trimTrailingZeros(absolute.toFixed(2))} USDC`;
+};
+
 export const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;

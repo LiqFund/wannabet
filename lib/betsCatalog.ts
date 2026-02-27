@@ -34,7 +34,7 @@ export type BetRecord = {
 export const betsCatalog: BetRecord[] = [
   {
     id: 'btc-100k-q4',
-    title: 'BTC closes above $100k by 2026-12-31',
+    title: 'BTC closes above 100k by 2026-12-31',
     description: 'Bet resolves using BTC/USD reference price at resolution timestamp.',
     templateType: 'PRICE_ABOVE_BELOW',
     assetBase: 'BTC',
@@ -58,7 +58,7 @@ export const betsCatalog: BetRecord[] = [
   },
   {
     id: 'eth-range-nov',
-    title: 'ETH in $3,500-$4,200 range on Nov 30',
+    title: 'ETH in 3,500-4,200 range on Nov 30',
     description: 'Settlement uses ETH/USD snapshot at the exact resolve time.',
     templateType: 'PRICE_RANGE',
     assetBase: 'ETH',
@@ -82,7 +82,7 @@ export const betsCatalog: BetRecord[] = [
   },
   {
     id: 'sol-above-300',
-    title: 'SOL above $300 by 2026-10-01',
+    title: 'SOL above 300 by 2026-10-01',
     description: 'A deterministic oracle snapshot picks winner at resolution.',
     templateType: 'PRICE_ABOVE_BELOW',
     assetBase: 'SOL',
