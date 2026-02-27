@@ -338,16 +338,19 @@ body::after {
     height: 100%;
   }
 
-  .bet-card-footer {
+  .available-footer {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 120px;
+    padding-top: 14px;
+    padding-bottom: 16px;
+    gap: 10px;
   }
 
-  .time-remaining {
-    margin-bottom: 14px;
+  .footer-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0;
   }
 
   .time-row {
@@ -355,14 +358,13 @@ body::after {
     align-items: center;
     gap: 6px;
     white-space: nowrap;
+    padding-top: 6px;
+    padding-bottom: 6px;
   }
 
-  .time-separator {
-    opacity: 0.6;
-  }
-
-  .accept-bet-button {
+  .available-footer .accept-bet-button {
     width: 100%;
+    margin-top: 0;
   }
 
   .hud-card {

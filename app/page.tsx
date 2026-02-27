@@ -519,18 +519,16 @@ export default function HomePage() {
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
                 <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
                 <TermsBox bet={bet} />
-                <div className="mt-3 border-t border-white/10" />
               </>
             )}
 
             {bet.status === 'AVAILABLE' ? (
-              <div className="bet-card-footer mt-3">
-                <div className="time-remaining">
-                  <div className="time-row text-[11px] tracking-[0.08em]">
-                    <span className="time-label text-white/45">Time remaining</span>
-                    <span className="time-separator"> - </span>
-                    <span className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</span>
-                  </div>
+              <div className="available-footer">
+                <div className="footer-divider" />
+                <div className="time-row text-[11px] tracking-[0.08em]">
+                  <span className="time-label text-white/45">Time remaining</span>
+                  <span className="time-sep"> - </span>
+                  <span className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</span>
                 </div>
                 <button
                   type="button"
