@@ -305,6 +305,7 @@ export default function BetCreatePage() {
   const [oddsX, setOddsX] = useState<string>("2");
 
   const [title, setTitle] = useState<string>("");
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
 
   const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
   const activeSportMarkets = useMemo(() => SPORT_MARKET_MATRIX[sport], [sport]);
@@ -413,6 +414,7 @@ export default function BetCreatePage() {
       return {
         mode: "sports" as const,
         title: title.trim() || "Untitled bet",
+        visibility: isPrivate ? "Private" : "Public",
         sport,
         event: eventLabel,
         market: sportsMarket,
@@ -461,6 +463,7 @@ export default function BetCreatePage() {
       opponentRequired: formatUSDC(taker),
       odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
       title: title.trim() || "Untitled bet",
+      visibility: isPrivate ? "Private" : "Public",
     };
   }, [
     activeSportMarkets.totalUnit,
@@ -469,6 +472,7 @@ export default function BetCreatePage() {
     expiryDate,
     expiryPreset,
     labelById,
+    isPrivate,
     methodPick,
     oddsPreset,
     oddsX,
@@ -553,6 +557,49 @@ export default function BetCreatePage() {
               <div className="flex flex-col gap-4">
                 <FieldRow label="Bet title" hint="Name the bet first. If empty, we use a default.">
                   <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. BTC above 100k in 90 days" />
+                </FieldRow>
+
+                <FieldRow
+                  label="Private bet"
+                  hint="Only people with the link can view and accept this bet."
+                  right={
+                    isPrivate ? (
+                      <span className="rounded-full border border-[rgba(212,175,55,0.35)] bg-[rgba(212,175,55,0.10)] px-2.5 py-1 text-[10px] font-semibold tracking-[0.15em] text-[rgba(212,175,55,0.95)]">
+                        PRIVATE
+                      </span>
+                    ) : null
+                  }
+                >
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isPrivate}
+                      onClick={() => setIsPrivate((value) => !value)}
+                      className={clsx(
+                        "relative inline-flex h-7 w-12 items-center rounded-full border transition-colors",
+                        isPrivate
+                          ? "border-[rgba(212,175,55,0.5)] bg-[rgba(212,175,55,0.20)]"
+                          : "border-white/15 bg-white/10 hover:border-white/25"
+                      )}
+                    >
+                      <span
+                        className={clsx(
+                          "mx-1 h-5 w-5 rounded-full transition-transform",
+                          isPrivate ? "translate-x-5 bg-[rgba(212,175,55,0.95)]" : "translate-x-0 bg-white/80"
+                        )}
+                      />
+                    </button>
+
+                    {isPrivate ? (
+                      <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
+                        <div className="text-xs font-medium text-white/70">Private link</div>
+                        <div className="mt-1 rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-sm text-white/45">
+                          Will be generated after bet is created
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
                 </FieldRow>
               </div>
             </SectionCard>
@@ -950,6 +997,11 @@ export default function BetCreatePage() {
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                   <div className="text-xs text-white/55">Odds</div>
                   <div className="mt-1 text-sm text-white/85">{summary.odds}</div>
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs text-white/55">Visibility</div>
+                  <div className="mt-1 text-sm text-white/85">{summary.visibility}</div>
                 </div>
               </div>
 
