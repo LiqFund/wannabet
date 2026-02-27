@@ -466,11 +466,38 @@ export default function HomePage() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {displayedMarketCards.map(({ bet, leftIdentity, rightIdentity }) => (
-          <article key={bet.id} className="hud-card rounded-md border border-white/10 bg-panel p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="space-y-1">
-                {bet.status === 'AVAILABLE' ? (
-                  <>
+          <article key={bet.id} className={`hud-card rounded-md border border-white/10 bg-panel p-3 ${bet.status === 'LIVE' ? 'flex h-full flex-col' : ''}`}>
+            {bet.status === 'LIVE' ? (
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <div className="flex flex-col leading-tight">
+                      {leftIdentity && rightIdentity ? (
+                        <>
+                          <div className="flex items-center gap-2 text-sm font-medium text-white/90">
+                            <IdentityDisplay identity={leftIdentity} />
+                          </div>
+                          <div className="my-1 text-center text-xs font-semibold tracking-wider text-red-500">VS</div>
+                          <div className="flex items-center gap-2 text-sm font-medium text-white/90">
+                            <IdentityDisplay identity={rightIdentity} />
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">
+                    {bet.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
+                <TermsBox bet={bet} />
+                <div className="mt-3 border-t border-white/10" />
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Created by</p>
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
                       {bet.creator.type === 'x' ? (
@@ -482,38 +509,18 @@ export default function HomePage() {
                         shortenSolAddress(bet.creator.id)
                       )}
                     </p>
-                  </>
-                ) : (
-                  <div className="flex flex-col leading-tight">
-                    {leftIdentity && rightIdentity ? (
-                      <>
-                        <div className="flex items-center gap-2 text-sm font-medium text-white/90">
-                          <IdentityDisplay identity={leftIdentity} />
-                        </div>
-                        <div className="my-1 text-center text-xs font-semibold tracking-wider text-red-500">VS</div>
-                        <div className="flex items-center gap-2 text-sm font-medium text-white/90">
-                          <IdentityDisplay identity={rightIdentity} />
-                        </div>
-                      </>
-                    ) : null}
                   </div>
-                )}
-              </div>
-              <span
-                className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] ${
-                  bet.status === 'LIVE'
-                    ? 'border border-rose-500/40 bg-rose-500/15 text-rose-200'
-                    : 'border border-emerald-500/40 bg-emerald-500/15 text-emerald-200'
-                }`}
-              >
-                {bet.status}
-              </span>
-            </div>
+                  <span className="rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200">
+                    {bet.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
+                <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
+                <TermsBox bet={bet} />
+                <div className="mt-3 border-t border-white/10" />
+              </>
+            )}
 
-            <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
-            <p className="mt-2 line-clamp-2 text-sm text-white/80">{bet.title}</p>
-            <TermsBox bet={bet} />
-            <div className="mt-3 border-t border-white/10" />
             {bet.status === 'AVAILABLE' ? (
               <div className="mt-3 flex items-end justify-between gap-3">
                 <div className="text-[11px] uppercase tracking-[0.08em]">
@@ -531,9 +538,11 @@ export default function HomePage() {
                 </button>
               </div>
             ) : (
-              <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.08em]">
-                <p className="text-white/45">Time remaining</p>
-                <p className="text-white/80">{bet.timeRemainingLabel}</p>
+              <div className="mt-4 border-t border-white/10 pt-4">
+                <div className="flex items-center justify-between text-xs text-white/55">
+                  <span>TIME REMAINING</span>
+                  <span className="text-sm text-white/80">{bet.timeRemainingLabel}</span>
+                </div>
               </div>
             )}
           </article>
