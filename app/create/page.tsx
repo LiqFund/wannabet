@@ -1027,72 +1027,7 @@ export default function BetCreatePage() {
               </div>
             </div>
 
-            <div className="mt-6 rounded-2xl border border-white/10 bg-black/40 p-5 md:p-6">
-              <div className="text-sm font-semibold text-white">Quick presets</div>
-              <div className="mt-3 grid grid-cols-1 gap-2">
-                <MiniButton
-                  onClick={() => {
-                    setSector("Crypto");
-                    setSearch("");
-                    setUnderlyingA("BTC/USD");
-                    setBetType("Threshold");
-                    setComparatorA("Above");
-                    setStrikeA("100000");
-                    setExpiryPreset("90D");
-                    setStakeAmount("100000");
-                    setTitle("BTC above 100k in 90 days");
-                  }}
-                >
-                  BTC &gt; 100k (90D)
-                </MiniButton>
-
-                <MiniButton
-                  onClick={() => {
-                    setSector("Equities");
-                    setSearch("");
-                    setUnderlyingA("SPY");
-                    setUnderlyingB("QQQ");
-                    setBetType("Relative Performance");
-                    setExpiryPreset("90D");
-                    setStakeAmount("50000");
-                    setTitle("SPY outperforms QQQ (90D)");
-                  }}
-                >
-                  SPY outperforms QQQ (90D)
-                </MiniButton>
-
-                <MiniButton
-                  onClick={() => {
-                    setSector("Commodities");
-                    setSearch("");
-                    setUnderlyingA("XAU/USD");
-                    setBetType("Time-to-Touch");
-                    setStrikeA("2600");
-                    setExpiryPreset("90D");
-                    setStakeAmount("25000");
-                    setTitle("Gold touches 2600 before expiry (90D)");
-                  }}
-                >
-                  Gold touches 2600 (90D)
-                </MiniButton>
-
-                <MiniButton
-                  onClick={() => {
-                    setSector("FX");
-                    setSearch("");
-                    setUnderlyingA("DXY");
-                    setBetType("Threshold");
-                    setComparatorA("Above");
-                    setStrikeA("106");
-                    setExpiryPreset("30D");
-                    setStakeAmount("50000");
-                    setTitle("DXY above 106 in 30 days");
-                  }}
-                >
-                  DXY &gt; 106 (30D)
-                </MiniButton>
-              </div>
-            </div>
+            
           </div>
         </div>
 
