@@ -350,6 +350,17 @@ body::after {
     margin-bottom: 14px;
   }
 
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .time-separator {
+    opacity: 0.6;
+  }
+
   .accept-bet-button {
     width: 100%;
   }

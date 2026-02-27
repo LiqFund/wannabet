@@ -525,9 +525,12 @@ export default function HomePage() {
 
             {bet.status === 'AVAILABLE' ? (
               <div className="bet-card-footer mt-3">
-                <div className="time-remaining text-[11px] uppercase tracking-[0.08em]">
-                  <p className="time-label text-white/45">Time remaining</p>
-                  <p className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</p>
+                <div className="time-remaining">
+                  <div className="time-row text-[11px] tracking-[0.08em]">
+                    <span className="time-label text-white/45">Time remaining</span>
+                    <span className="time-separator"> - </span>
+                    <span className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</span>
+                  </div>
                 </div>
                 <button
                   type="button"
