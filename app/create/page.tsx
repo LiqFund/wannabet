@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { formatUSDC } from "@/lib/format";
 
 type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Sports";
 type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
 type Comparator = "Above" | "Below";
-type SettlementToken = "USDC" | "SOL" | "USDT";
 type Sport = "Football" | "Basketball" | "Baseball" | "Hockey" | "Soccer" | "MMA" | "Boxing";
 type SportsMarket = "Moneyline" | "Spread" | "Total" | "Draw No Bet" | "Method" | "Round";
 type TotalSide = "Over" | "Under";
@@ -301,7 +301,6 @@ export default function BetCreatePage() {
   const [strikeA, setStrikeA] = useState<string>("100000");
 
   const [stakeAmount, setStakeAmount] = useState<string>("100000");
-  const [stakeToken, setStakeToken] = useState<SettlementToken>("USDC");
   const [oddsPreset, setOddsPreset] = useState<(typeof oddsPresets)[number]>("1-1");
   const [oddsX, setOddsX] = useState<string>("2");
 
@@ -419,8 +418,8 @@ export default function BetCreatePage() {
         market: sportsMarket,
         condition: sportsCondition,
         resolution: "Resolves at final result",
-        makerEscrow: `${maker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
-        opponentRequired: `${taker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+        makerEscrow: formatUSDC(maker),
+        opponentRequired: formatUSDC(taker),
         odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
       };
     }
@@ -458,8 +457,8 @@ export default function BetCreatePage() {
       betType,
       expiry,
       condition,
-      makerEscrow: `${maker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
-      opponentRequired: `${taker.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${stakeToken}`,
+      makerEscrow: formatUSDC(maker),
+      opponentRequired: formatUSDC(taker),
       odds: `${x.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
       title: title.trim() || "Untitled bet",
     };
@@ -481,7 +480,6 @@ export default function BetCreatePage() {
     sportsMarket,
     spreadLine,
     stakeAmount,
-    stakeToken,
     strikeA,
     title,
     totalLine,
@@ -847,7 +845,7 @@ export default function BetCreatePage() {
 
             <SectionCard title={isSports ? "4) Stake" : "5) Stake"} subtitle={isSports ? "Step 4" : "Step 5"}>
               <div className="flex flex-col gap-5">
-                <FieldRow label="Your stake (Maker escrow)" hint="Amount you escrow as maker (UI only).">
+                <FieldRow label="Stake (USDC)" hint="Amount you escrow as maker (UI only).">
                   <Input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="e.g. 100000" />
                 </FieldRow>
 
@@ -869,17 +867,10 @@ export default function BetCreatePage() {
 
                 <FieldRow label="Opponent stake required" hint="Calculated as Maker escrow / X.">
                   <div className="rounded-xl border border-white/10 bg-black/60 px-4 py-3 text-sm text-white/85">
-                    {takerStake.toLocaleString(undefined, { maximumFractionDigits: 8 })} {stakeToken}
+                    {formatUSDC(takerStake)}
                   </div>
                 </FieldRow>
 
-                <FieldRow label="Settlement token" hint="Token used to denominate the stake (UI only).">
-                  <Select value={stakeToken} onChange={(e) => setStakeToken(e.target.value as SettlementToken)}>
-                    <option value="USDC">USDC</option>
-                    <option value="SOL">SOL</option>
-                    <option value="USDT">USDT</option>
-                  </Select>
-                </FieldRow>
               </div>
             </SectionCard>
           </div>
@@ -999,7 +990,6 @@ export default function BetCreatePage() {
                     setStrikeA("100000");
                     setExpiryPreset("90D");
                     setStakeAmount("100000");
-                    setStakeToken("USDC");
                     setTitle("BTC above 100k in 90 days");
                   }}
                 >
@@ -1015,7 +1005,6 @@ export default function BetCreatePage() {
                     setBetType("Relative Performance");
                     setExpiryPreset("90D");
                     setStakeAmount("50000");
-                    setStakeToken("USDC");
                     setTitle("SPY outperforms QQQ (90D)");
                   }}
                 >
@@ -1031,7 +1020,6 @@ export default function BetCreatePage() {
                     setStrikeA("2600");
                     setExpiryPreset("90D");
                     setStakeAmount("25000");
-                    setStakeToken("USDC");
                     setTitle("Gold touches 2600 before expiry (90D)");
                   }}
                 >
@@ -1048,7 +1036,6 @@ export default function BetCreatePage() {
                     setStrikeA("106");
                     setExpiryPreset("30D");
                     setStakeAmount("50000");
-                    setStakeToken("USDC");
                     setTitle("DXY above 106 in 30 days");
                   }}
                 >

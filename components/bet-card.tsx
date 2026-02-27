@@ -1,6 +1,6 @@
 import { BetRecord } from '@/lib/betsCatalog';
 import Link from 'next/link';
-import { formatDateUtc, formatTemplate } from '@/lib/format';
+import { formatDateUtc, formatTemplate, formatUSDC } from '@/lib/format';
 import { HandleBadge } from './handle-badge';
 
 type Props = { bet: BetRecord };
@@ -21,11 +21,11 @@ export function BetCard({ bet }: Props) {
       <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
         <div>
           <p>Stake / side</p>
-          <p className="text-sm font-semibold text-neon">{bet.stakePerSide.toString()} {bet.currencyLabel}</p>
+          <p className="text-sm font-semibold text-neon">{formatUSDC(bet.stakePerSide)}</p>
         </div>
         <div>
           <p>Total pot</p>
-          <p className="text-sm font-semibold text-neon">{pot} {bet.currencyLabel}</p>
+          <p className="text-sm font-semibold text-neon">{formatUSDC(pot)}</p>
         </div>
         <div>
           <p>Resolves</p>

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getBetById } from '@/lib/betsCatalog';
-import { formatDateUtc, formatTemplate, shortAddress } from '@/lib/format';
+import { formatDateUtc, formatTemplate, formatUSDC, shortAddress } from '@/lib/format';
 import { HandleBadge } from '@/components/handle-badge';
 
 export async function generateMetadata({ params }: { params: { id: string } }) {
@@ -39,8 +39,8 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           <h2 className="font-semibold tracking-tight text-neon">Bet details</h2>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>Template: {formatTemplate(bet)}</li>
-            <li>Stake / side: {bet.stakePerSide.toString()} {bet.currencyLabel}</li>
-            <li>Total pot: {Number(bet.stakePerSide) * 2} {bet.currencyLabel}</li>
+            <li>Stake / side: {formatUSDC(bet.stakePerSide)}</li>
+            <li>Total pot: {formatUSDC(Number(bet.stakePerSide) * 2)}</li>
             <li>Creator: {shortAddress(bet.creatorAddress)}</li>
             <li>Taker: {bet.takerAddress ? shortAddress(bet.takerAddress) : 'Unfilled'}</li>
             <li>Oracle source: {bet.oracleSource}</li>
