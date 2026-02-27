@@ -139,7 +139,7 @@ const SPORTS_MARKET_DESC: Record<SportsMarket, string> = {
   Moneyline: "Pick the outright winner of the event.",
   Spread: "Pick the winner after applying the handicap spread.",
   Total: "Pick whether combined scoring lands over or under a total line.",
-  "Draw No Bet": "Pick a side; if the match ends in a draw, this is treated as a refund (UI only).",
+  "Draw No Bet": "Pick a side; if the match ends in a draw, this is treated as a refund.",
   Method: "Pick the winner and method of victory.",
   Round: "Pick the winner and the exact round they win in.",
 };
@@ -721,7 +721,7 @@ export default function BetCreatePage() {
 
                     {sportsMarket === "Draw No Bet" ? (
                       <>
-                        <FieldRow label="Pick / Outcome" hint="Draw refunds (UI only)." right={<Pill>Required</Pill>}>
+                        <FieldRow label="Pick / Outcome" hint="Draw refunds." right={<Pill>Required</Pill>}>
                           <Select value={pick} onChange={(e) => setPick(e.target.value)} disabled={!selectedEvent}>
                             <option value="">Select a side</option>
                             {selectedEvent ? (
@@ -777,7 +777,7 @@ export default function BetCreatePage() {
                           </Select>
                         </FieldRow>
 
-                        <FieldRow label="Winning round" hint="Wins in that round (UI only)." right={<Pill>Required</Pill>}>
+                        <FieldRow label="Winning round" hint="Wins in that round." right={<Pill>Required</Pill>}>
                           <Select value={roundPick} onChange={(e) => setRoundPick(e.target.value)}>
                             {Array.from({ length: activeSportMarkets.roundsMax ?? 1 }, (_, i) => String(i + 1)).map((round) => (
                               <option key={round} value={round}>
@@ -813,7 +813,7 @@ export default function BetCreatePage() {
             {isSports ? (
               <SectionCard title="3) Notes" subtitle="Step 3">
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
-                  No live updates. Bets resolve once final result is known. UI only.
+                  No live updates. Bets resolve once final result is known.
                 </div>
               </SectionCard>
             ) : (
@@ -892,7 +892,7 @@ export default function BetCreatePage() {
 
             <SectionCard title={isSports ? "4) Stake" : "5) Stake"} subtitle={isSports ? "Step 4" : "Step 5"}>
               <div className="flex flex-col gap-5">
-                <FieldRow label="Stake (USDC)" hint="Amount you escrow as maker (UI only).">
+                <FieldRow label="Stake (USDC)" hint="Amount you escrow as maker.">
                   <Input value={stakeAmount} onChange={(e) => setStakeAmount(e.target.value)} placeholder="e.g. 100000" />
                 </FieldRow>
 
@@ -929,7 +929,7 @@ export default function BetCreatePage() {
                   <div className="text-xs tracking-wide text-white/55">Preview</div>
                   <div className="mt-1 text-lg font-semibold text-white">{summary.title}</div>
                 </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">UI only</div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"></div>
               </div>
 
               <div className="mt-5 space-y-3">
