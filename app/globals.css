@@ -112,6 +112,86 @@ body::after {
 }
 
 @layer utilities {
+  .wb-select-trigger {
+    @apply inline-flex items-center justify-between rounded-xl border border-white/15 bg-black/25 py-3 pl-4 pr-10 text-sm font-semibold text-white/90;
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0);
+  }
+
+  .wb-select-trigger:hover {
+    @apply border-cyan/30 bg-black/35;
+  }
+
+  .wb-select-trigger[data-placeholder] {
+    @apply text-white/55;
+  }
+
+  .wb-select-trigger:focus-visible {
+    @apply border-cyan/45;
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+  }
+
+  .wb-select-trigger[data-disabled] {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .wb-select-chevron {
+    @apply pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/70;
+  }
+
+  .wb-select-content {
+    @apply z-[1000] overflow-hidden rounded-2xl border border-white/15 bg-[#0b0f1f] shadow-[0_18px_36px_rgba(0,0,0,0.55)] backdrop-blur;
+    min-width: var(--radix-select-trigger-width);
+    max-height: var(--radix-select-content-available-height);
+    transform-origin: var(--radix-select-content-transform-origin);
+    animation: wb-select-in 150ms ease-out;
+  }
+
+  .wb-select-content[data-state='closed'] {
+    animation: wb-select-out 120ms ease-in;
+  }
+
+  .wb-select-item {
+    @apply relative flex cursor-default select-none items-center gap-2 rounded-lg py-3 pl-10 pr-4 text-sm font-semibold text-white/85 outline-none;
+  }
+
+  .wb-select-item[data-highlighted] {
+    @apply bg-white/10 text-white;
+  }
+
+  .wb-select-item[data-state='checked'] {
+    @apply bg-cyan/10 text-cyan;
+  }
+
+  .wb-select-item-indicator {
+    @apply absolute left-3 inline-flex items-center justify-center text-cyan;
+  }
+
+  .wb-select-separator {
+    @apply my-1 h-px bg-white/10;
+  }
+
+  @keyframes wb-select-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes wb-select-out {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-2px) scale(0.98);
+    }
+  }
+
   .bg-panel,
   .bg-panel\/80 {
     background-color: color-mix(in srgb, var(--fight-panel) 88%, transparent);
