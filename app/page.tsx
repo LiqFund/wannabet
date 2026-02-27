@@ -412,7 +412,7 @@ export default function HomePage() {
                       : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
                   }`}
                 >
-                  {status}
+                  {status === 'LIVE' ? 'IN PLAY' : status}
                 </button>
               ))}
             </div>
@@ -488,7 +488,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <span className="rounded-md border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-rose-200">
-                    {bet.status}
+                    {bet.status === 'LIVE' ? 'IN PLAY' : bet.status}
                   </span>
                 </div>
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(getHeadlineAmount(bet))}</p>
