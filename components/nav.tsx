@@ -14,13 +14,23 @@ export function Nav() {
             Create
           </Link>
         </nav>
-        <button
-          type="button"
-          disabled
-          className="rounded-md border border-neon/50 bg-neon/10 px-3 py-2 text-[11px] font-semibold tracking-wide text-neon opacity-80 md:px-4 md:text-xs"
-        >
-          Connect (soon)
-        </button>
+        <div className="flex items-center gap-2">
+          <a
+            href="https://bags.fm"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="rounded-md border border-neon/50 bg-neon/10 px-3 py-2 text-[11px] font-semibold tracking-wide text-neon opacity-80 md:px-4 md:text-xs"
+          >
+            Bags.fm
+          </a>
+          <button
+            type="button"
+            disabled
+            className="rounded-md border border-neon/50 bg-neon/10 px-3 py-2 text-[11px] font-semibold tracking-wide text-neon opacity-80 md:px-4 md:text-xs"
+          >
+            Connect (soon)
+          </button>
+        </div>
       </div>
     </header>
   );
