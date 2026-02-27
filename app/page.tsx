@@ -524,17 +524,17 @@ export default function HomePage() {
             )}
 
             {bet.status === 'AVAILABLE' ? (
-              <div className="mt-3 flex items-end justify-between gap-3">
+              <div className="bet-time-section mt-3">
                 <div className="text-[11px] uppercase tracking-[0.08em]">
-                  <p className="text-white/45">Time remaining</p>
-                  <p className="mt-1 text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</p>
+                  <p className="time-label text-white/45">Time remaining</p>
+                  <p className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     window.alert('Accept flow coming soon');
                   }}
-                  className="rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
+                  className="w-fit rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
                 >
                   ACCEPT BET • {formatUSDC(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}
                 </button>

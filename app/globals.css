@@ -331,6 +331,26 @@ body::after {
       display: block;
     }
   }
+
+  .bet-time-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 110px;
+  }
+
+  .bet-time-section .time-label {
+    margin-bottom: 6px;
+  }
+
+  .bet-time-section .time-value {
+    margin-bottom: 12px;
+  }
+
+  .bet-time-section button {
+    margin-top: auto;
+  }
+
   .hud-card {
     position: relative;
   }
