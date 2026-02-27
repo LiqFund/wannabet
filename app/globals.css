@@ -332,23 +332,26 @@ body::after {
     }
   }
 
-  .bet-time-section {
+  .bet-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .bet-card-footer {
+    margin-top: auto;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-height: 110px;
+    min-height: 120px;
   }
 
-  .bet-time-section .time-label {
-    margin-bottom: 6px;
+  .time-remaining {
+    margin-bottom: 14px;
   }
 
-  .bet-time-section .time-value {
-    margin-bottom: 12px;
-  }
-
-  .bet-time-section button {
-    margin-top: auto;
+  .accept-bet-button {
+    width: 100%;
   }
 
   .hud-card {
