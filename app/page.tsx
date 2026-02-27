@@ -412,7 +412,7 @@ export default function HomePage() {
                       : 'border-white/15 bg-black/20 text-white/75 hover:border-cyan/30 hover:text-white'
                   }`}
                 >
-                  {status}
+                  {status === 'LIVE' ? 'IN PLAY' : status}
                 </button>
               ))}
             </div>
