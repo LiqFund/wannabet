@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { formatUSDC } from "@/lib/format";
+import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
 
 type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Sports";
 type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
@@ -210,25 +211,24 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-function Select({ className, children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+function Select({ className, children, value, onChange, disabled, name }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  const options = React.Children.toArray(children)
+    .filter((child): child is React.ReactElement<{ value?: string; children?: React.ReactNode }> => React.isValidElement(child))
+    .map((child) => ({
+      value: String(child.props.value ?? ""),
+      label: typeof child.props.children === "string" ? child.props.children : String(child.props.children ?? "")
+    }));
+
   return (
-    <div className="relative">
-      <select
-        {...props}
-        className={clsx(
-          "w-full appearance-none rounded-xl border border-white/10 bg-black/60 px-4 py-3 pr-11 text-sm text-white",
-          "outline-none focus:border-white/25",
-          className
-        )}
-      >
-        {children}
-      </select>
-      <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-white/50" aria-hidden>
-        <svg viewBox="0 0 20 20" fill="none" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg">
-          <path d="M5.5 7.75L10 12.25L14.5 7.75" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-    </div>
+    <UnifiedSelect
+      value={String(value ?? "")}
+      onValueChange={(nextValue) => onChange?.({ target: { value: nextValue } } as React.ChangeEvent<HTMLSelectElement>)}
+      options={options}
+      disabled={disabled}
+      className={className}
+      widthClassName="w-full"
+      name={name}
+    />
   );
 }
 

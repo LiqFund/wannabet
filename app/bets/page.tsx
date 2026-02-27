@@ -1,6 +1,7 @@
 import { BetCard } from '@/components/bet-card';
 import { betsCatalog } from '@/lib/betsCatalog';
-import { BetStatus, labelForTemplate, statusOptions, TemplateType, templateOptions } from '@/lib/types';
+import { BetStatus, statusOptions, TemplateType, templateOptions } from '@/lib/types';
+import { BetsFilters } from '@/components/BetsFilters';
 
 export const metadata = {
   title: 'Browse bets | wannabet.you',
@@ -41,27 +42,13 @@ export default async function BetsPage({
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-black tracking-tight">Browse Bets</h1>
-      <form className="grid gap-3 rounded-lg border border-white/15 bg-panel/95 p-4 shadow-glow md:grid-cols-5">
-        <select name="status" defaultValue={searchParams.status ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
-          <option value="">All statuses</option>
-          {statusOptions.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
-        <select name="templateType" defaultValue={searchParams.templateType ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
-          <option value="">All templates</option>
-          {templateOptions.map((t) => <option key={t} value={t}>{labelForTemplate[t]}</option>)}
-        </select>
-        <input name="minStake" type="number" step="0.01" min="0" defaultValue={searchParams.minStake ?? ''} placeholder="Min stake" className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45" />
-        <select name="window" defaultValue={searchParams.window ?? ''} className="rounded-md border border-white/15 bg-bg p-2 text-sm hover:border-magenta/45 focus-visible:border-neon/45">
-          <option value="">Any resolve time</option>
-          <option value="24h">Next 24h</option>
-          <option value="7d">Next 7d</option>
-          <option value="30d">Next 30d</option>
-        </select>
-        <label className="flex items-center gap-2 text-sm">
-          <input name="hasHandles" type="checkbox" value="true" defaultChecked={searchParams.hasHandles === 'true'} /> Has handles
-        </label>
-        <button className="rounded-md border border-neon/30 bg-neon/20 px-4 py-2 font-semibold text-neon hover:bg-neon/30 hover:border-neon/50 md:col-span-5 md:justify-self-start">Apply filters</button>
-      </form>
+      <BetsFilters
+        defaultStatus={searchParams.status}
+        defaultTemplateType={searchParams.templateType}
+        defaultMinStake={searchParams.minStake}
+        defaultWindow={searchParams.window as '24h' | '7d' | '30d' | undefined}
+        defaultHasHandles={searchParams.hasHandles === 'true'}
+      />
 
       <div className="grid gap-4 md:grid-cols-2">
         {bets.length === 0 ? <p className="text-white/70">No bets match filters.</p> : bets.map((bet) => <BetCard key={bet.id} bet={bet} />)}
