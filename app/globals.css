@@ -241,6 +241,18 @@ body::after {
     background-color: rgba(208, 177, 115, 0.28);
   }
 
+
+  .wannabet-token-button {
+    color: #16c784;
+    border-color: rgba(22, 199, 132, 0.6);
+    background-color: rgba(22, 199, 132, 0.08);
+  }
+
+  .wannabet-token-button:hover {
+    background-color: rgba(22, 199, 132, 0.15);
+    box-shadow: 0 0 18px rgba(22, 199, 132, 0.35);
+  }
+
   .bg-magenta\/10 {
     background-color: rgba(111, 26, 35, 0.18);
   }
