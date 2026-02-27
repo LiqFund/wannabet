@@ -484,13 +484,19 @@ export default function HomePage() {
                     </p>
                   </>
                 ) : (
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
+                  <div className="flex flex-col leading-tight">
                     {leftIdentity && rightIdentity ? (
                       <>
-                        <IdentityDisplay identity={leftIdentity} /> <span className="mx-1 text-rose-700">VS</span> <IdentityDisplay identity={rightIdentity} />
+                        <div className="flex items-center gap-2 text-sm font-medium text-white/90">
+                          <IdentityDisplay identity={leftIdentity} />
+                        </div>
+                        <div className="my-1 text-center text-xs font-semibold tracking-wider text-red-500">VS</div>
+                        <div className="flex items-center gap-2 text-sm font-medium text-white/90">
+                          <IdentityDisplay identity={rightIdentity} />
+                        </div>
                       </>
                     ) : null}
-                  </p>
+                  </div>
                 )}
               </div>
               <span
