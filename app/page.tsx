@@ -28,6 +28,8 @@ type HomeBet = {
   taker?: HomeIdentity;
   makerEscrowUsdc?: number;
   takerEscrowUsdc?: number;
+  toAcceptUsdc?: number;
+  oddsLabel?: string;
   odds?: string;
 };
 
@@ -250,6 +252,29 @@ function getLiveToWinUsdc(bet: HomeBet): number {
   return (bet.makerEscrowUsdc ?? 0) + (bet.takerEscrowUsdc ?? 0);
 }
 
+function getAvailableOddsLabel(bet: HomeBet): string {
+  if (bet.oddsLabel) {
+    return bet.oddsLabel;
+  }
+
+  if (bet.oddsText) {
+    return bet.oddsText;
+  }
+
+  if (bet.odds) {
+    return bet.odds;
+  }
+
+  const makerEscrow = bet.makerEscrowUsd ?? bet.makerEscrowUsdc;
+  const toAccept = bet.toAcceptUsd ?? bet.toAcceptUsdc;
+
+  if (makerEscrow !== undefined && toAccept !== undefined && makerEscrow === toAccept) {
+    return '1-1';
+  }
+
+  return '1-1';
+}
+
 function formatIdentity(identity: HomeIdentity): string {
   return identity.type === 'x' ? `@${identity.value}` : shortenSolAddress(identity.value);
 }
@@ -296,15 +321,15 @@ function TermsBox({ bet }: { bet: HomeBet }) {
   }
 
   if (bet.status === 'AVAILABLE') {
+    const oddsLabel = getAvailableOddsLabel(bet);
+
     return (
       <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-2.5">
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Accept terms</p>
-          {bet.oddsText && (
-            <span className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan">
-              Odds {bet.oddsText}
-            </span>
-          )}
+          <span className="rounded-full border border-cyan/35 bg-cyan/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan">
+            Odds {oddsLabel}
+          </span>
         </div>
         <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
           <p className="text-white/50">Maker escrow</p>
