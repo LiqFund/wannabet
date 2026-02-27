@@ -468,7 +468,7 @@ export default function HomePage() {
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {displayedMarketCards.map(({ bet, leftIdentity, rightIdentity }) => (
-          <article key={bet.id} className={`hud-card rounded-md border border-white/10 bg-panel p-3 ${bet.status === 'LIVE' ? 'flex h-full flex-col' : ''}`}>
+          <article key={bet.id} className="bet-card hud-card flex h-full flex-col rounded-md border border-white/10 bg-panel p-3">
             {bet.status === 'LIVE' ? (
               <div className="flex-1">
                 <div className="flex items-start justify-between gap-2">
@@ -524,8 +524,8 @@ export default function HomePage() {
             )}
 
             {bet.status === 'AVAILABLE' ? (
-              <div className="bet-time-section mt-3">
-                <div className="text-[11px] uppercase tracking-[0.08em]">
+              <div className="bet-card-footer mt-3">
+                <div className="time-remaining text-[11px] uppercase tracking-[0.08em]">
                   <p className="time-label text-white/45">Time remaining</p>
                   <p className="time-value text-sm font-semibold text-white/80">{bet.timeRemainingLabel}</p>
                 </div>
@@ -534,7 +534,7 @@ export default function HomePage() {
                   onClick={() => {
                     window.alert('Accept flow coming soon');
                   }}
-                  className="w-fit rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
+                  className="accept-bet-button rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35"
                 >
                   ACCEPT BET • {formatUSDC(bet.toAcceptUsd ?? bet.makerEscrowUsd ?? getHeadlineAmount(bet))}
                 </button>
