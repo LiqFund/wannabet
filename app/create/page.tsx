@@ -924,14 +924,12 @@ export default function BetCreatePage() {
 
           <div className="lg:sticky lg:top-6">
             <div className="rounded-2xl border border-white/10 bg-black/50 p-5 md:p-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="text-xs tracking-wide text-white/55">Preview</div>
-                  <div className="mt-1 text-lg font-semibold text-white">{summary.title}</div>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70"></div>
-              </div>
-
+             <div>
+  <div className="text-xs tracking-wide text-white/55">Preview</div>
+  <div className="mt-1 text-lg font-semibold text-white">
+    {summary.title}
+  </div>
+</div>
               <div className="mt-5 space-y-3">
                 {summary.mode === "sports" ? (
                   <>
