@@ -546,9 +546,9 @@ export default function BetCreatePage() {
     <div style={shellStyle} className="px-4 py-8 md:px-8">
       <div className="mx-auto w-full max-w-5xl">
         <div className="mb-6 flex flex-col gap-2">
-          <div className="text-xs tracking-wide text-white/55">Wanna Bet? • Create</div>
+          <div className="text-xs tracking-wide text-white/55">Wanna Bet?</div>
           <h1 className="text-2xl font-semibold text-white md:text-3xl">Create a bet</h1>
-          <div className="text-sm text-white/60">Frontend-only slip. Choose a sector, pick a market, set conditions, then preview the contract.</div>
+          <div className="text-sm text-white/60">Choose a sector, pick a market, set conditions, then preview the bet.</div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.25fr_0.75fr]">
@@ -1018,13 +1018,13 @@ export default function BetCreatePage() {
                     alert("Frontend-only preview. Hook up create/escrow later.");
                   }}
                 >
-                  Create bet (UI only)
+                  Create bet
                 </button>
 
                 <div className="mt-3 text-xs text-white/45">
                   {isSports && sportsMissingItems.length > 0
                     ? `Missing: ${sportsMissingItems.join(", ")}.`
-                    : "This button does nothing permanent. It’s only here to show the intended flow."}
+                    : ""}
                 </div>
               </div>
             </div>
@@ -1098,7 +1098,7 @@ export default function BetCreatePage() {
           </div>
         </div>
 
-        <div className="mt-10 text-center text-xs text-white/35">Bet slip UI only. No wallet, no escrow, no settlement logic included.</div>
+        <div className="mt-10 text-center text-xs text-white/35"></div>
       </div>
     </div>
   );
