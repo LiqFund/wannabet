@@ -397,8 +397,8 @@ export default function HomePage() {
         </div>
 
         <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="filters-wrapper">
+            <div className="status-filters">
               {(['LIVE', 'AVAILABLE'] as const).map((status) => (
                 <button
                   key={status}
@@ -417,7 +417,9 @@ export default function HomePage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="filter-divider" />
+
+            <div className="category-filters">
               {primaryCategories.map((category) => (
                 <button
                   key={category}
