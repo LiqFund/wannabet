@@ -16,12 +16,12 @@ export function Nav() {
         </nav>
         <div className="flex items-center gap-2">
           <a
-            href="https://bags.fm/9FhkPgLc5NqYhj1yHVyJkukjB2jrTjZfcUUk1n87BAGS"
+            href="https://bags.fm/3J4XmrqWbiwCro4psrQdwCmoxnwC7BgQevPwoUF3BAGS"
             target="_blank"
             rel="noreferrer noopener"
             className="wannabet-token-button rounded-md border px-3 py-2 text-[11px] font-semibold tracking-wide opacity-80 md:px-4 md:text-xs"
           >
-            $WANNABET
+            INVEST
           </a>
           <button
             type="button"
