@@ -694,7 +694,8 @@ export default function BetCreatePage() {
   };
 
   return (
-    <div style={shellStyle} className="px-4 py-8 md:px-8">
+    <>
+      <div style={shellStyle} className="px-4 py-8 md:px-8">
       <div className="mx-auto w-full max-w-5xl">
         <div className="mb-6 flex flex-col gap-2">
           <div className="text-xs tracking-wide text-white/55">Wanna Bet?</div>
@@ -1180,11 +1181,6 @@ export default function BetCreatePage() {
                   </div>
                 ) : null}
 
-                {submitSuccess ? (
-                  <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                    {submitSuccess}
-                  </div>
-                ) : null}
               </div>
             </div>
 
@@ -1195,5 +1191,27 @@ export default function BetCreatePage() {
         <div className="mt-10 text-center text-xs text-white/35"></div>
       </div>
     </div>
+
+    {submitSuccess ? (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
+        <div className="w-full max-w-lg rounded-2xl border border-emerald-500/30 bg-[#07110d] p-6 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <img src="/icon.ico" alt="Wannabet logo" className="h-16 w-auto" />
+            <h3 className="text-2xl font-semibold text-white">Bet created successfully</h3>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setSubmitSuccess("")}
+              className="rounded-xl border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }
