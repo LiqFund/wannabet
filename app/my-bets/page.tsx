@@ -377,8 +377,7 @@ export default function MyBetsPage() {
                 : '1-1';
             const canCancel =
               activeTab === 'CREATED' &&
-              bet.state === 'OPEN' &&
-              bet.expiryTs > Math.floor(Date.now() / 1000);
+              bet.state === 'OPEN';
 
             return (
               <article
