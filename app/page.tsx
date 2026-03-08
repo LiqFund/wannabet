@@ -198,6 +198,35 @@ export default function HomePage() {
         }
       : null;
 
+  function getFriendlyAcceptErrorMessage(error: unknown) {
+    const raw =
+      error instanceof Error
+        ? `${error.name} ${error.message}`
+        : typeof error === 'string'
+          ? error
+          : JSON.stringify(error);
+
+    const normalized = raw.toLowerCase();
+
+    if (normalized.includes('insufficient funds')) {
+      return 'Not enough USDC to accept this bet.';
+    }
+
+    if (normalized.includes('creatorcannotaccept') || normalized.includes('bet creator cannot accept their own bet')) {
+      return 'You cannot accept your own bet. Switch to a different wallet.';
+    }
+
+    if (normalized.includes('user rejected') || normalized.includes('rejected the request')) {
+      return 'Transaction was cancelled in your wallet.';
+    }
+
+    if (normalized.includes('wallet')) {
+      return 'Wallet error. Reconnect your wallet and try again.';
+    }
+
+    return 'Failed to accept bet. Please try again.';
+  }
+
   async function handleAcceptBet(bet: RealBet) {
     setAcceptError('');
     setAcceptSuccess('');
@@ -277,7 +306,7 @@ export default function HomePage() {
       setAcceptSuccess(`Bet accepted. TX: ${tx}`);
     } catch (err) {
       console.error(err);
-      setAcceptError(err instanceof Error ? err.message : 'Failed to accept bet.');
+      setAcceptError(getFriendlyAcceptErrorMessage(err));
     } finally {
       setAcceptingBet('');
     }

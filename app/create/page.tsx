@@ -604,6 +604,31 @@ export default function BetCreatePage() {
         }
       : null;
 
+  function getFriendlyCreateErrorMessage(error: unknown) {
+    const raw =
+      error instanceof Error
+        ? `${error.name} ${error.message}`
+        : typeof error === "string"
+          ? error
+          : JSON.stringify(error);
+
+    const normalized = raw.toLowerCase();
+
+    if (normalized.includes("insufficient funds")) {
+      return "Not enough USDC to create this bet. Lower the stake or fund your wallet.";
+    }
+
+    if (normalized.includes("user rejected") || normalized.includes("rejected the request")) {
+      return "Transaction was cancelled in your wallet.";
+    }
+
+    if (normalized.includes("wallet")) {
+      return "Wallet error. Reconnect your wallet and try again.";
+    }
+
+    return "Failed to create bet. Please try again.";
+  }
+
   async function handleCreateBet() {
     setSubmitError("");
     setSubmitSuccess("");
@@ -656,7 +681,7 @@ export default function BetCreatePage() {
       setSubmitSuccess(`Devnet bet created. Bet: ${betPda.toBase58()} | TX: ${tx}`);
     } catch (error) {
       console.error(error);
-      setSubmitError(error instanceof Error ? error.message : "Failed to prepare program client.");
+      setSubmitError(getFriendlyCreateErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
