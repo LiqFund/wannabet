@@ -1,8 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { BN } from "@coral-xyz/anchor";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { formatUSDC } from "@/lib/format";
 import { UnifiedSelect } from "@/components/ui/UnifiedSelect";
+import { getWannaBetProgram } from "@/lib/anchor";
+import { WANNABET_DEVNET_TEST_MINT, WANNABET_ESCROW_PROGRAM_ID } from "@/lib/solana";
 
 type Sector = "Crypto" | "Equities" | "Commodities" | "FX" | "Sports";
 type BetType = "Threshold" | "Relative Performance" | "Time-to-Touch";
@@ -275,6 +281,7 @@ function SectorTabs(props: { value: Sector; onChange: (value: Sector) => void })
 
 export default function BetCreatePage() {
   const gold = "#D4AF37";
+  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
   const oddsPresets = ["1-1", "2-1", "3-1", "4-1", "5-1", "10-1", "Custom"] as const;
 
   const [sector, setSector] = useState<Sector>("Crypto");
@@ -306,6 +313,9 @@ export default function BetCreatePage() {
 
   const [title, setTitle] = useState<string>("");
   const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string>("");
+  const [submitSuccess, setSubmitSuccess] = useState<string>("");
 
   const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
   const activeSportMarkets = useMemo(() => SPORT_MARKET_MATRIX[sport], [sport]);
@@ -535,6 +545,122 @@ export default function BetCreatePage() {
   }, [eventId, isSports, pick, spreadLine, sportsMarket, totalLine]);
 
   const createDisabled = isSports ? sportsMissingItems.length > 0 : false;
+
+  const makerAmountBaseUnits = Math.floor(parseAmount(stakeAmount) * 1_000_000);
+  const demoBetId = useMemo(() => Date.now(), []);
+  const expiryTs = useMemo(() => Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, []);
+  const creatorSide: 0 | 1 = 0;
+
+  const configPda = useMemo(
+    () =>
+      PublicKey.findProgramAddressSync(
+        [Buffer.from("config")],
+        WANNABET_ESCROW_PROGRAM_ID
+      )[0],
+    []
+  );
+
+  const betPda = useMemo(() => {
+    if (!publicKey) return null;
+
+    const betIdBuffer = Buffer.alloc(8);
+    betIdBuffer.writeBigUInt64LE(BigInt(demoBetId));
+
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("bet"), publicKey.toBuffer(), betIdBuffer],
+      WANNABET_ESCROW_PROGRAM_ID
+    )[0];
+  }, [demoBetId, publicKey]);
+
+  const escrowAuthorityPda = useMemo(() => {
+    if (!betPda) return null;
+
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from("escrow"), betPda.toBuffer()],
+      WANNABET_ESCROW_PROGRAM_ID
+    )[0];
+  }, [betPda]);
+
+  const creatorAta = useMemo(() => {
+    if (!publicKey) return null;
+    return getAssociatedTokenAddressSync(WANNABET_DEVNET_TEST_MINT, publicKey);
+  }, [publicKey]);
+
+  const escrowAta = useMemo(() => {
+    if (!escrowAuthorityPda) return null;
+    return getAssociatedTokenAddressSync(
+      WANNABET_DEVNET_TEST_MINT,
+      escrowAuthorityPda,
+      true
+    );
+  }, [escrowAuthorityPda]);
+
+  const connectedWallet =
+    publicKey && wallet && signTransaction && signAllTransactions
+      ? {
+          publicKey,
+          signTransaction,
+          signAllTransactions,
+        }
+      : null;
+
+  async function handleCreateBet() {
+    setSubmitError("");
+    setSubmitSuccess("");
+    setIsSubmitting(true);
+
+    try {
+      if (!connectedWallet) {
+        setSubmitError("Connect a Solana wallet first.");
+        return;
+      }
+
+      if (isSports) {
+        setSubmitError("Sports create flow is not wired on-chain yet.");
+        return;
+      }
+
+      if (!betPda || !escrowAuthorityPda || !creatorAta || !escrowAta) {
+        setSubmitError("Missing required account state for bet creation.");
+        return;
+      }
+
+      if (makerAmountBaseUnits <= 0) {
+        setSubmitError("Stake must be greater than 0.");
+        return;
+      }
+
+      const program = getWannaBetProgram(connectedWallet);
+
+      const tx = await program.methods
+        .createBet(
+          new BN(demoBetId),
+          creatorSide,
+          new BN(makerAmountBaseUnits),
+          new BN(expiryTs)
+        )
+        .accounts({
+          creator: connectedWallet.publicKey,
+          config: configPda,
+          mint: WANNABET_DEVNET_TEST_MINT,
+          creatorAta,
+          bet: betPda,
+          escrowAuthority: escrowAuthorityPda,
+          escrowAta,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc();
+
+      setSubmitSuccess(`Devnet bet created. Bet: ${betPda.toBase58()} | TX: ${tx}`);
+    } catch (error) {
+      console.error(error);
+      setSubmitError(error instanceof Error ? error.message : "Failed to prepare program client.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   const shellStyle: React.CSSProperties = {
     minHeight: "100vh",
@@ -1011,12 +1137,10 @@ export default function BetCreatePage() {
                     background: "rgba(212,175,55,0.10)",
                     color: gold,
                   }}
-                  disabled={createDisabled}
-                  onClick={() => {
-                    alert("Frontend-only preview. Hook up create/escrow later.");
-                  }}
+                  disabled={createDisabled || isSubmitting}
+                  onClick={handleCreateBet}
                 >
-                  Create bet
+                  {isSubmitting ? "Preparing..." : "Create bet"}
                 </button>
 
                 <div className="mt-3 text-xs text-white/45">
@@ -1024,6 +1148,18 @@ export default function BetCreatePage() {
                     ? `Missing: ${sportsMissingItems.join(", ")}.`
                     : ""}
                 </div>
+
+                {submitError ? (
+                  <div className="mt-3 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    {submitError}
+                  </div>
+                ) : null}
+
+                {submitSuccess ? (
+                  <div className="mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                    {submitSuccess}
+                  </div>
+                ) : null}
               </div>
             </div>
 

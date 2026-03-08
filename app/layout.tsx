@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Nav } from '@/components/nav';
 import { Footer } from '@/components/footer';
+import { SolanaProvider } from '@/components/solana-provider';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -20,9 +21,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <Nav />
-        <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 md:px-6 md:py-10">{children}</main>
-        <Footer />
+        <SolanaProvider>
+          <Nav />
+          <main className="mx-auto min-h-screen max-w-6xl px-5 py-8 md:px-6 md:py-10">{children}</main>
+          <Footer />
+        </SolanaProvider>
       </body>
     </html>
   );

@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Logo } from './logo';
 
 export function Nav() {
@@ -23,13 +26,7 @@ export function Nav() {
           >
             INVEST
           </a>
-          <button
-            type="button"
-            disabled
-            className="rounded-md border border-neon/50 bg-neon/10 px-3 py-2 text-[11px] font-semibold tracking-wide text-neon opacity-80 md:px-4 md:text-xs"
-          >
-            Connect (soon)
-          </button>
+          <WalletMultiButton className="!h-auto !rounded-md !border !border-neon/50 !bg-neon/10 !px-3 !py-2 !text-[11px] !font-semibold !tracking-wide !text-neon md:!px-4 md:!text-xs" />
         </div>
       </div>
     </header>
