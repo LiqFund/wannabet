@@ -16,6 +16,9 @@ export function Nav() {
           <Link href="/create" className="hover:text-gold">
             Create
           </Link>
+          <Link href="/my-bets" className="hover:text-gold">
+            My Bets
+          </Link>
         </nav>
         <div className="flex items-center gap-2">
           <a
