@@ -70,6 +70,24 @@ function formatStakeRatio(left: number, right: number) {
   return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
 }
 
+function readAnchorNumberLike(
+  value: { toNumber?: () => number; toString?: () => string } | undefined,
+  fallback = 0
+) {
+  if (!value) return fallback;
+
+  if (typeof value.toNumber === 'function') {
+    return value.toNumber();
+  }
+
+  if (typeof value.toString === 'function') {
+    const parsed = Number(value.toString());
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
 export default function HomePage() {
   const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
   const [bets, setBets] = useState<RealBet[]>([]);
@@ -119,36 +137,27 @@ export default function HomePage() {
             creator: { toBase58: () => string };
             accepter: { toBase58: () => string };
             mint: { toBase58: () => string };
-            creatorAmount: { toNumber?: () => number; toString: () => string };
-            accepterAmountRequired: { toNumber?: () => number; toString: () => string };
-            accepterAmount: { toNumber?: () => number; toString: () => string };
-            expiryTs: { toNumber?: () => number; toString: () => string };
+            creatorAmount?: { toNumber?: () => number; toString?: () => string };
+            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string };
+            accepterAmount?: { toNumber?: () => number; toString?: () => string };
+            expiryTs?: { toNumber?: () => number; toString?: () => string };
             state: Record<string, unknown>;
-            creatorSide: number;
-            accepterSide: number;
-            winnerSide: number;
-            betId: { toString: () => string };
+            creatorSide?: number;
+            accepterSide?: number;
+            winnerSide?: number;
+            betId?: { toString: () => string };
           };
 
-          const creatorAmountBase =
-            typeof account.creatorAmount?.toNumber === 'function'
-              ? account.creatorAmount.toNumber()
-              : Number(account.creatorAmount.toString());
+          const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
 
-          const accepterAmountRequiredBase =
-            typeof account.accepterAmountRequired?.toNumber === 'function'
-              ? account.accepterAmountRequired.toNumber()
-              : Number(account.accepterAmountRequired.toString());
+          const accepterAmountRequiredBase = readAnchorNumberLike(
+            account.accepterAmountRequired,
+            creatorAmountBase
+          );
 
-          const accepterAmountBase =
-            typeof account.accepterAmount?.toNumber === 'function'
-              ? account.accepterAmount.toNumber()
-              : Number(account.accepterAmount.toString());
+          const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
 
-          const expiryTs =
-            typeof account.expiryTs?.toNumber === 'function'
-              ? account.expiryTs.toNumber()
-              : Number(account.expiryTs.toString());
+          const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
           return {
             pubkey: typedItem.publicKey.toBase58(),
@@ -160,10 +169,10 @@ export default function HomePage() {
             accepterAmountUi: accepterAmountBase / 1_000_000,
             expiryTs,
             state: getStateLabel(account.state),
-            creatorSide: account.creatorSide,
-            accepterSide: account.accepterSide,
-            winnerSide: account.winnerSide,
-            betId: account.betId.toString(),
+            creatorSide: account.creatorSide ?? 0,
+            accepterSide: account.accepterSide ?? 0,
+            winnerSide: account.winnerSide ?? 0,
+            betId: account.betId?.toString?.() ?? '0',
           };
         })
         .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
@@ -475,7 +484,7 @@ export default function HomePage() {
                         <p className="text-white/50">Opponent stake required</p>
                         <p className="font-semibold text-white">{formatUSDC(bet.accepterAmountRequiredUi)}</p>
 
-                        <p className="text-white/50">Potential pot</p>
+                        <p className="text.white/50">Potential pot</p>
                         <p className="font-semibold text-white">{formatUSDC(totalPot)}</p>
                       </>
                     ) : (
