@@ -26,6 +26,8 @@ type RealBet = {
   betId: string;
 };
 
+const DEFAULT_PUBKEY = PublicKey.default.toBase58();
+
 function shortAddress(value: string) {
   return `${value.slice(0, 6)}...${value.slice(-4)}`;
 }
@@ -48,11 +50,12 @@ function formatRemaining(expiryTs: number) {
   return `${diff}S`;
 }
 
-function getStateLabel(state: Record<string, unknown>) {
-  if (state.open) return 'OPEN';
-  if (state.locked) return 'LOCKED';
-  if (state.cancelled) return 'CANCELLED';
-  if (state.resolved) return 'RESOLVED';
+function getStateLabel(state: Record<string, unknown> | null | undefined) {
+  if (!state || typeof state !== 'object') return 'UNKNOWN';
+  if ('open' in state) return 'OPEN';
+  if ('locked' in state) return 'LOCKED';
+  if ('cancelled' in state) return 'CANCELLED';
+  if ('resolved' in state) return 'RESOLVED';
   return 'UNKNOWN';
 }
 
@@ -71,7 +74,7 @@ function formatStakeRatio(left: number, right: number) {
 }
 
 function readAnchorNumberLike(
-  value: { toNumber?: () => number; toString?: () => string } | undefined,
+  value: { toNumber?: () => number; toString?: () => string } | null | undefined,
   fallback = 0
 ) {
   if (!value) return fallback;
@@ -83,6 +86,24 @@ function readAnchorNumberLike(
   if (typeof value.toString === 'function') {
     const parsed = Number(value.toString());
     return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
+function readAnchorPubkeyLike(
+  value: { toBase58?: () => string; toString?: () => string } | null | undefined,
+  fallback = DEFAULT_PUBKEY
+) {
+  if (!value) return fallback;
+
+  if (typeof value.toBase58 === 'function') {
+    return value.toBase58();
+  }
+
+  if (typeof value.toString === 'function') {
+    const parsed = value.toString();
+    return parsed || fallback;
   }
 
   return fallback;
@@ -130,49 +151,49 @@ export default function HomePage() {
         .map((item) => {
           const typedItem = item as {
             publicKey: { toBase58: () => string };
-            account: Record<string, unknown>;
+            account: Record<string, unknown> | null;
           };
 
-          const account = typedItem.account as Record<string, unknown> & {
-            creator: { toBase58: () => string };
-            accepter: { toBase58: () => string };
-            mint: { toBase58: () => string };
-            creatorAmount?: { toNumber?: () => number; toString?: () => string };
-            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string };
-            accepterAmount?: { toNumber?: () => number; toString?: () => string };
-            expiryTs?: { toNumber?: () => number; toString?: () => string };
-            state: Record<string, unknown>;
-            creatorSide?: number;
-            accepterSide?: number;
-            winnerSide?: number;
-            betId?: { toString: () => string };
+          const account = (typedItem.account ?? {}) as Record<string, unknown> & {
+            creator?: { toBase58?: () => string; toString?: () => string } | null;
+            accepter?: { toBase58?: () => string; toString?: () => string } | null;
+            mint?: { toBase58?: () => string; toString?: () => string } | null;
+            creatorAmount?: { toNumber?: () => number; toString?: () => string } | null;
+            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string } | null;
+            accepterAmount?: { toNumber?: () => number; toString?: () => string } | null;
+            expiryTs?: { toNumber?: () => number; toString?: () => string } | null;
+            state?: Record<string, unknown> | null;
+            creatorSide?: number | null;
+            accepterSide?: number | null;
+            winnerSide?: number | null;
+            betId?: { toString?: () => string } | null;
           };
 
           const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
-
           const accepterAmountRequiredBase = readAnchorNumberLike(
             account.accepterAmountRequired,
             creatorAmountBase
           );
-
           const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
-
           const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
           return {
             pubkey: typedItem.publicKey.toBase58(),
-            creator: account.creator.toBase58(),
-            accepter: account.accepter.toBase58(),
-            mint: account.mint.toBase58(),
+            creator: readAnchorPubkeyLike(account.creator),
+            accepter: readAnchorPubkeyLike(account.accepter),
+            mint: readAnchorPubkeyLike(account.mint),
             creatorAmountUi: creatorAmountBase / 1_000_000,
             accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
             accepterAmountUi: accepterAmountBase / 1_000_000,
             expiryTs,
             state: getStateLabel(account.state),
-            creatorSide: account.creatorSide ?? 0,
-            accepterSide: account.accepterSide ?? 0,
-            winnerSide: account.winnerSide ?? 0,
-            betId: account.betId?.toString?.() ?? '0',
+            creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
+            accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
+            winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
+            betId:
+              account.betId && typeof account.betId.toString === 'function'
+                ? account.betId.toString()
+                : '0',
           };
         })
         .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
@@ -484,7 +505,7 @@ export default function HomePage() {
                         <p className="text-white/50">Opponent stake required</p>
                         <p className="font-semibold text-white">{formatUSDC(bet.accepterAmountRequiredUi)}</p>
 
-                        <p className="text.white/50">Potential pot</p>
+                        <p className="text-white/50">Potential pot</p>
                         <p className="font-semibold text-white">{formatUSDC(totalPot)}</p>
                       </>
                     ) : (
