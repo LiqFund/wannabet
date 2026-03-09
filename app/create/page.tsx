@@ -903,52 +903,19 @@ export default function BetCreatePage() {
       : null;
 
   function getFriendlyCreateErrorMessage(error: unknown) {
-    const raw =
-      error instanceof Error
-        ? `${error.name} ${error.message}`
-        : typeof error === "string"
-        ? error
-        : JSON.stringify(error);
-
-    const normalized = raw.toLowerCase();
-
-    if (
-      normalized.includes("invalidoddsratio") ||
-      normalized.includes("invalid odds ratio")
-    ) {
-      return "Odds must stay between 1:1 and 100:1.";
+    if (typeof error === "string") {
+      return error;
     }
 
-    if (
-      normalized.includes("invalidexpiry") ||
-      normalized.includes("invalid expiry")
-    ) {
-      return "Expiry is invalid. Choose a later expiry time.";
+    if (error instanceof Error) {
+      return `${error.name}: ${error.message}`;
     }
 
-    if (
-      normalized.includes("invalidamount") ||
-      normalized.includes("invalid amount")
-    ) {
-      return "Stake amounts must be greater than 0.";
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch {
+      return "Unknown create bet error.";
     }
-
-    if (normalized.includes("insufficient funds")) {
-      return "Not enough USDC to create this bet. Lower the stake or fund your wallet.";
-    }
-
-    if (
-      normalized.includes("user rejected") ||
-      normalized.includes("rejected the request")
-    ) {
-      return "Transaction was cancelled in your wallet.";
-    }
-
-    if (normalized.includes("wallet")) {
-      return "Wallet error. Reconnect your wallet and try again.";
-    }
-
-    return "Failed to create bet. Please try again.";
   }
 
   async function handleCreateBet() {
