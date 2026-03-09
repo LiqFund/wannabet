@@ -145,16 +145,19 @@ export default function HomePage() {
         provider
       );
 
-      const accounts = await (program.account as unknown as { bet: { all: () => Promise<unknown[]> } }).bet.all();
+      const rawAccounts = await connection.getProgramAccounts(WANNABET_ESCROW_PROGRAM_ID, {
+        commitment: 'confirmed',
+      });
 
-      const mapped: RealBet[] = accounts
-        .map((item) => {
-          const typedItem = item as {
-            publicKey: { toBase58: () => string };
-            account: Record<string, unknown> | null;
-          };
+      const mapped: RealBet[] = [];
 
-          const account = (typedItem.account ?? {}) as Record<string, unknown> & {
+      for (const rawAccount of rawAccounts) {
+        try {
+          const decoded = (program.coder.accounts as unknown as {
+            decode: (name: string, data: Buffer) => Record<string, unknown>;
+          }).decode('Bet', rawAccount.account.data);
+
+          const account = decoded as Record<string, unknown> & {
             creator?: { toBase58?: () => string; toString?: () => string } | null;
             accepter?: { toBase58?: () => string; toString?: () => string } | null;
             mint?: { toBase58?: () => string; toString?: () => string } | null;
@@ -177,8 +180,8 @@ export default function HomePage() {
           const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
           const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
-          return {
-            pubkey: typedItem.publicKey.toBase58(),
+          const bet: RealBet = {
+            pubkey: rawAccount.pubkey.toBase58(),
             creator: readAnchorPubkeyLike(account.creator),
             accepter: readAnchorPubkeyLike(account.accepter),
             mint: readAnchorPubkeyLike(account.mint),
@@ -195,10 +198,18 @@ export default function HomePage() {
                 ? account.betId.toString()
                 : '0',
           };
-        })
-        .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
-        .sort((a, b) => b.expiryTs - a.expiryTs);
 
+          if (bet.mint !== WANNABET_DEVNET_TEST_MINT.toBase58()) {
+            continue;
+          }
+
+          mapped.push(bet);
+        } catch (decodeErr) {
+          console.warn('Skipping incompatible devnet bet account:', rawAccount.pubkey.toBase58(), decodeErr);
+        }
+      }
+
+      mapped.sort((a, b) => b.expiryTs - a.expiryTs);
       setBets(mapped);
     } catch (err) {
       console.error(err);
@@ -465,7 +476,9 @@ export default function HomePage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Creator</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">
+                      Creator
+                    </p>
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
                       {shortAddress(bet.creator)}
                     </p>
@@ -503,7 +516,9 @@ export default function HomePage() {
                     {bet.state === 'OPEN' ? (
                       <>
                         <p className="text-white/50">Opponent stake required</p>
-                        <p className="font-semibold text-white">{formatUSDC(bet.accepterAmountRequiredUi)}</p>
+                        <p className="font-semibold text-white">
+                          {formatUSDC(bet.accepterAmountRequiredUi)}
+                        </p>
 
                         <p className="text-white/50">Potential pot</p>
                         <p className="font-semibold text-white">{formatUSDC(totalPot)}</p>
@@ -511,7 +526,9 @@ export default function HomePage() {
                     ) : (
                       <>
                         <p className="text-white/50">Opponent stake</p>
-                        <p className="font-semibold text-white/85">{formatUSDC(bet.accepterAmountUi)}</p>
+                        <p className="font-semibold text-white/85">
+                          {formatUSDC(bet.accepterAmountUi)}
+                        </p>
 
                         <p className="text-white/50">Total pot</p>
                         <p className="font-semibold text-white">{formatUSDC(totalPot)}</p>
