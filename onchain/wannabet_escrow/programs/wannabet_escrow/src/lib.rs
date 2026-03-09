@@ -2,12 +2,13 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("H1fMNM3LC2Ljy6auyBVzeTvE2aeG4CTDRhpm6crn5bVW");
+declare_id!("Dp2U48v9tF2PwUVeg92tGSwxgC2r85XddpB7Ts5BBcPH");
 
 const CONFIG_SEED: &[u8] = b"config";
 const BET_SEED: &[u8] = b"bet";
 const ESCROW_SEED: &[u8] = b"escrow";
 const BPS_DENOMINATOR: u64 = 10_000;
+const MAX_ODDS_RATIO: u64 = 100;
 
 const DEFAULT_MIN_EXPIRY_SECONDS: i64 = 60;
 const TEST_MODE_MIN_EXPIRY_SECONDS: i64 = 5;
@@ -19,6 +20,31 @@ fn min_expiry_seconds() -> i64 {
     } else {
         DEFAULT_MIN_EXPIRY_SECONDS
     }
+}
+
+#[inline(always)]
+fn validate_odds_ratio(creator_amount: u64, accepter_amount_required: u64) -> Result<()> {
+    require!(creator_amount > 0, ErrorCode::InvalidAmount);
+    require!(accepter_amount_required > 0, ErrorCode::InvalidAmount);
+
+    let creator_greater = creator_amount >= accepter_amount_required;
+
+    if creator_greater {
+        let max_allowed = accepter_amount_required
+            .checked_mul(MAX_ODDS_RATIO)
+            .ok_or(ErrorCode::MathOverflow)?;
+        require!(creator_amount <= max_allowed, ErrorCode::InvalidOddsRatio);
+    } else {
+        let max_allowed = creator_amount
+            .checked_mul(MAX_ODDS_RATIO)
+            .ok_or(ErrorCode::MathOverflow)?;
+        require!(
+            accepter_amount_required <= max_allowed,
+            ErrorCode::InvalidOddsRatio
+        );
+    }
+
+    Ok(())
 }
 
 #[program]
@@ -57,12 +83,13 @@ pub mod wannabet_escrow {
         ctx: Context<CreateBet>,
         bet_id: u64,
         creator_side: u8,
-        amount: u64,
+        creator_amount: u64,
+        accepter_amount_required: u64,
         expiry_ts: i64,
     ) -> Result<()> {
         require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
         require!(creator_side <= 1, ErrorCode::InvalidSide);
-        require!(amount > 0, ErrorCode::InvalidAmount);
+        validate_odds_ratio(creator_amount, accepter_amount_required)?;
 
         let now = Clock::get()?.unix_timestamp;
         require!(expiry_ts > now + min_expiry_seconds(), ErrorCode::InvalidExpiry);
@@ -71,7 +98,8 @@ pub mod wannabet_escrow {
         bet.creator = ctx.accounts.creator.key();
         bet.accepter = Pubkey::default();
         bet.mint = ctx.accounts.mint.key();
-        bet.creator_amount = amount;
+        bet.creator_amount = creator_amount;
+        bet.accepter_amount_required = accepter_amount_required;
         bet.accepter_amount = 0;
         bet.expiry_ts = expiry_ts;
         bet.state = BetState::Open;
@@ -81,7 +109,7 @@ pub mod wannabet_escrow {
         bet.bet_id = bet_id;
         bet.bump = ctx.bumps.bet;
 
-        token::transfer(ctx.accounts.transfer_to_escrow_ctx(), amount)?;
+        token::transfer(ctx.accounts.transfer_to_escrow_ctx(), creator_amount)?;
         Ok(())
     }
 
@@ -92,8 +120,14 @@ pub mod wannabet_escrow {
 
         require!(bet.state == BetState::Open, ErrorCode::InvalidBetState);
         require!(now < bet.expiry_ts, ErrorCode::BetExpired);
-        require!(amount == bet.creator_amount, ErrorCode::AmountMustMatchCreator);
-        require!(ctx.accounts.accepter.key() != bet.creator, ErrorCode::CreatorCannotAccept);
+        require!(
+            amount == bet.accepter_amount_required,
+            ErrorCode::AmountMustMatchRequired
+        );
+        require!(
+            ctx.accounts.accepter.key() != bet.creator,
+            ErrorCode::CreatorCannotAccept
+        );
         require!(bet.accepter == Pubkey::default(), ErrorCode::AlreadyAccepted);
 
         bet.accepter = ctx.accounts.accepter.key();
@@ -107,33 +141,33 @@ pub mod wannabet_escrow {
         Ok(())
     }
 
-   pub fn cancel_bet(ctx: Context<CancelBet>) -> Result<()> {
-    require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+    pub fn cancel_bet(ctx: Context<CancelBet>) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
 
-    let bet_key = ctx.accounts.bet.key();
-    let creator_amount = ctx.accounts.bet.creator_amount;
+        let bet_key = ctx.accounts.bet.key();
+        let creator_amount = ctx.accounts.bet.creator_amount;
 
-    {
-        let bet = &mut ctx.accounts.bet;
-        require!(bet.state == BetState::Open, ErrorCode::InvalidBetState);
-        bet.state = BetState::Cancelled;
+        {
+            let bet = &mut ctx.accounts.bet;
+            require!(bet.state == BetState::Open, ErrorCode::InvalidBetState);
+            bet.state = BetState::Cancelled;
+        }
+
+        let signer_seeds: &[&[u8]] = &[
+            ESCROW_SEED,
+            bet_key.as_ref(),
+            &[ctx.bumps.escrow_authority],
+        ];
+
+        token::transfer(
+            ctx.accounts
+                .transfer_from_escrow_ctx()
+                .with_signer(&[signer_seeds]),
+            creator_amount,
+        )?;
+
+        Ok(())
     }
-
-    let signer_seeds: &[&[u8]] = &[
-        ESCROW_SEED,
-        bet_key.as_ref(),
-        &[ctx.bumps.escrow_authority],
-    ];
-
-    token::transfer(
-        ctx.accounts
-            .transfer_from_escrow_ctx()
-            .with_signer(&[signer_seeds]),
-        creator_amount,
-    )?;
-
-    Ok(())
-}
 
     pub fn resolve_bet(ctx: Context<ResolveBet>, winner_side: u8) -> Result<()> {
         require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
@@ -171,11 +205,11 @@ pub mod wannabet_escrow {
 
         let bet_key = ctx.accounts.bet.key();
 
-let signer_seeds: &[&[u8]] = &[
-    ESCROW_SEED,
-    bet_key.as_ref(),
-    &[ctx.bumps.escrow_authority],
-];
+        let signer_seeds: &[&[u8]] = &[
+            ESCROW_SEED,
+            bet_key.as_ref(),
+            &[ctx.bumps.escrow_authority],
+        ];
 
         if fee > 0 {
             token::transfer(
@@ -434,6 +468,7 @@ pub struct Bet {
     pub accepter: Pubkey,
     pub mint: Pubkey,
     pub creator_amount: u64,
+    pub accepter_amount_required: u64,
     pub accepter_amount: u64,
     pub expiry_ts: i64,
     pub state: BetState,
@@ -472,8 +507,10 @@ pub enum ErrorCode {
     BetExpired,
     #[msg("Bet has not reached expiry")]
     BetNotExpired,
-    #[msg("Accepter amount must match creator amount")]
-    AmountMustMatchCreator,
+    #[msg("Accepter amount must match required amount")]
+    AmountMustMatchRequired,
+    #[msg("Invalid odds ratio")]
+    InvalidOddsRatio,
     #[msg("Bet creator cannot accept their own bet")]
     CreatorCannotAccept,
     #[msg("Bet already accepted")]
