@@ -13,6 +13,7 @@ type RealBet = {
   accepter: string;
   mint: string;
   creatorAmountUi: number;
+  accepterAmountRequiredUi: number;
   accepterAmountUi: number;
   expiryTs: number;
   state: string;
@@ -32,6 +33,20 @@ function getStateLabel(state: Record<string, unknown>) {
 
 function formatExpiryUtc(expiryTs: number) {
   return formatDateUtc(new Date(expiryTs * 1000));
+}
+
+function formatStakeRatio(left: number, right: number) {
+  if (left <= 0 || right <= 0) return 'N/A';
+
+  const larger = Math.max(left, right);
+  const smaller = Math.min(left, right);
+  const ratio = larger / smaller;
+
+  if (Number.isInteger(ratio)) {
+    return `${ratio}:1`;
+  }
+
+  return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
 }
 
 async function getRealBet(pubkey: string): Promise<RealBet | null> {
@@ -70,6 +85,7 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
       accepter: { toBase58: () => string };
       mint: { toBase58: () => string };
       creatorAmount: { toNumber?: () => number; toString: () => string };
+      accepterAmountRequired: { toNumber?: () => number; toString: () => string };
       accepterAmount: { toNumber?: () => number; toString: () => string };
       expiryTs: { toNumber?: () => number; toString: () => string };
       state: Record<string, unknown>;
@@ -83,6 +99,11 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
       typeof typed.creatorAmount?.toNumber === 'function'
         ? typed.creatorAmount.toNumber()
         : Number(typed.creatorAmount.toString());
+
+    const accepterAmountRequiredBase =
+      typeof typed.accepterAmountRequired?.toNumber === 'function'
+        ? typed.accepterAmountRequired.toNumber()
+        : Number(typed.accepterAmountRequired.toString());
 
     const accepterAmountBase =
       typeof typed.accepterAmount?.toNumber === 'function'
@@ -100,6 +121,7 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
       accepter: typed.accepter.toBase58(),
       mint: typed.mint.toBase58(),
       creatorAmountUi: creatorAmountBase / 1_000_000,
+      accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
       accepterAmountUi: accepterAmountBase / 1_000_000,
       expiryTs,
       state: getStateLabel(typed.state),
@@ -132,14 +154,28 @@ export default async function BetDetailPage({ params }: { params: { id: string }
     notFound();
   }
 
-  const totalPot = bet.creatorAmountUi + bet.accepterAmountUi;
-  const isMatched = bet.accepter !== PublicKey.default.toBase58() && bet.accepterAmountUi > 0;
+  const isMatched =
+    bet.accepter !== PublicKey.default.toBase58() && bet.accepterAmountUi > 0;
+
+  const displayedOpponentStake = isMatched
+    ? bet.accepterAmountUi
+    : bet.accepterAmountRequiredUi;
+
+  const totalPot = bet.creatorAmountUi + displayedOpponentStake;
+  const stakeRatio = formatStakeRatio(
+    bet.creatorAmountUi,
+    bet.accepterAmountRequiredUi
+  );
 
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-white/15 bg-panel/95 p-6 shadow-glow">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">Real devnet bet</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight">{shortAddress(bet.pubkey)}</h1>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+          Real devnet bet
+        </p>
+        <h1 className="mt-2 text-3xl font-black tracking-tight">
+          {shortAddress(bet.pubkey)}
+        </h1>
         <p className="mt-2 text-sm text-white/75">
           Live on-chain escrow account loaded directly from devnet.
         </p>
@@ -155,8 +191,15 @@ export default async function BetDetailPage({ params }: { params: { id: string }
             <li>Mint: {shortAddress(bet.mint)}</li>
             <li>Creator: {shortAddress(bet.creator)}</li>
             <li>Taker: {isMatched ? shortAddress(bet.accepter) : 'Unfilled'}</li>
+            <li>Stake ratio: {stakeRatio}</li>
             <li>Creator escrow: {formatUSDC(bet.creatorAmountUi)}</li>
-            <li>Taker escrow: {formatUSDC(bet.accepterAmountUi)}</li>
+            <li>
+              Opponent stake required: {formatUSDC(bet.accepterAmountRequiredUi)}
+            </li>
+            <li>
+              Opponent escrow posted:{' '}
+              {isMatched ? formatUSDC(bet.accepterAmountUi) : 'Not filled yet'}
+            </li>
             <li>Total pot: {formatUSDC(totalPot)}</li>
           </ul>
         </section>

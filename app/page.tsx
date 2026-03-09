@@ -16,6 +16,7 @@ type RealBet = {
   accepter: string;
   mint: string;
   creatorAmountUi: number;
+  accepterAmountRequiredUi: number;
   accepterAmountUi: number;
   expiryTs: number;
   state: string;
@@ -53,6 +54,20 @@ function getStateLabel(state: Record<string, unknown>) {
   if (state.cancelled) return 'CANCELLED';
   if (state.resolved) return 'RESOLVED';
   return 'UNKNOWN';
+}
+
+function formatStakeRatio(left: number, right: number) {
+  if (left <= 0 || right <= 0) return 'N/A';
+
+  const larger = Math.max(left, right);
+  const smaller = Math.min(left, right);
+  const ratio = larger / smaller;
+
+  if (Number.isInteger(ratio)) {
+    return `${ratio}:1`;
+  }
+
+  return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
 }
 
 export default function HomePage() {
@@ -105,6 +120,7 @@ export default function HomePage() {
             accepter: { toBase58: () => string };
             mint: { toBase58: () => string };
             creatorAmount: { toNumber?: () => number; toString: () => string };
+            accepterAmountRequired: { toNumber?: () => number; toString: () => string };
             accepterAmount: { toNumber?: () => number; toString: () => string };
             expiryTs: { toNumber?: () => number; toString: () => string };
             state: Record<string, unknown>;
@@ -118,6 +134,11 @@ export default function HomePage() {
             typeof account.creatorAmount?.toNumber === 'function'
               ? account.creatorAmount.toNumber()
               : Number(account.creatorAmount.toString());
+
+          const accepterAmountRequiredBase =
+            typeof account.accepterAmountRequired?.toNumber === 'function'
+              ? account.accepterAmountRequired.toNumber()
+              : Number(account.accepterAmountRequired.toString());
 
           const accepterAmountBase =
             typeof account.accepterAmount?.toNumber === 'function'
@@ -135,6 +156,7 @@ export default function HomePage() {
             accepter: account.accepter.toBase58(),
             mint: account.mint.toBase58(),
             creatorAmountUi: creatorAmountBase / 1_000_000,
+            accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
             accepterAmountUi: accepterAmountBase / 1_000_000,
             expiryTs,
             state: getStateLabel(account.state),
@@ -216,6 +238,10 @@ export default function HomePage() {
       return 'You cannot accept your own bet. Switch to a different wallet.';
     }
 
+    if (normalized.includes('amountmustmatchrequired') || normalized.includes('amount must match required')) {
+      return 'The accept amount no longer matches the required opponent stake.';
+    }
+
     if (normalized.includes('user rejected') || normalized.includes('rejected the request')) {
       return 'Transaction was cancelled in your wallet.';
     }
@@ -274,7 +300,7 @@ export default function HomePage() {
         true
       );
 
-      const amountBaseUnits = Math.floor(bet.creatorAmountUi * 1_000_000);
+      const amountBaseUnits = Math.floor(bet.accepterAmountRequiredUi * 1_000_000);
 
       const tx = await (program.methods as unknown as {
         acceptBet: (amount: anchor.BN) => {
@@ -304,6 +330,7 @@ export default function HomePage() {
         .rpc();
 
       setAcceptSuccess(`Bet accepted. TX: ${tx}`);
+      await loadBets(false);
     } catch (err) {
       console.error(err);
       setAcceptError(getFriendlyAcceptErrorMessage(err));
@@ -323,7 +350,10 @@ export default function HomePage() {
           </p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 md:mt-0">
-          <Link href="/create" className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon">
+          <Link
+            href="/create"
+            className="rounded-md border border-neon/40 bg-neon/20 px-4 py-2 text-sm font-semibold uppercase tracking-[0.08em] text-neon"
+          >
             Create a bet
           </Link>
         </div>
@@ -393,15 +423,16 @@ export default function HomePage() {
       {!loading && !error && visibleBets.length > 0 ? (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {visibleBets.map((bet) => {
-            const totalPot = bet.creatorAmountUi + bet.accepterAmountUi;
-            const toAccept = bet.creatorAmountUi;
-            const oddsLabel =
-              bet.state === 'LOCKED' && bet.accepterAmountUi > 0
-                ? `${(bet.creatorAmountUi / bet.accepterAmountUi).toFixed(2).replace(/\.00$/, '')}-1`
-                : '1-1';
+            const requiredOpponentStake =
+              bet.state === 'OPEN' ? bet.accepterAmountRequiredUi : bet.accepterAmountUi;
+            const totalPot = bet.creatorAmountUi + requiredOpponentStake;
+            const oddsLabel = formatStakeRatio(bet.creatorAmountUi, bet.accepterAmountRequiredUi);
 
             return (
-              <article key={bet.pubkey} className="bet-card hud-card flex h-full flex-col rounded-md border border-white/10 bg-panel p-3">
+              <article
+                key={bet.pubkey}
+                className="bet-card hud-card flex h-full flex-col rounded-md border border-white/10 bg-panel p-3"
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">Creator</p>
@@ -422,38 +453,33 @@ export default function HomePage() {
 
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(totalPot)}</p>
                 <p className="mt-2 text-sm text-white/80">Devnet escrow bet</p>
-                  <Link
-                    href={`/bets/${bet.pubkey}`}
-                    className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-neon transition hover:text-white"
-                  >
-                    View details →
-                  </Link>
+                <Link
+                  href={`/bets/${bet.pubkey}`}
+                  className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-neon transition hover:text-white"
+                >
+                  View details →
+                </Link>
 
                 <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-2.5">
                   <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
+                    <p className="text-white/50">Stake ratio</p>
+                    <span className="rounded-full border border-sky-400/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-300">
+                      {oddsLabel}
+                    </span>
+
+                    <p className="text-white/50">Creator stake</p>
+                    <p className="font-semibold text-white/85">{formatUSDC(bet.creatorAmountUi)}</p>
+
                     {bet.state === 'OPEN' ? (
                       <>
-                        <p className="text-white/50">Odds</p>
-                        <span className="rounded-full border border-sky-400/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-300">
-                          Odds {oddsLabel}
-                        </span>
-
-                        <p className="text-white/50">Creator stake</p>
-                        <p className="font-semibold text-white/85">{formatUSDC(bet.creatorAmountUi)}</p>
-
                         <p className="text-white/50">Opponent stake required</p>
-                        <p className="font-semibold text-white">{formatUSDC(toAccept)}</p>
+                        <p className="font-semibold text-white">{formatUSDC(bet.accepterAmountRequiredUi)}</p>
+
+                        <p className="text-white/50">Potential pot</p>
+                        <p className="font-semibold text-white">{formatUSDC(totalPot)}</p>
                       </>
                     ) : (
                       <>
-                        <p className="text-white/50">Odds</p>
-                        <span className="rounded-full border border-sky-400/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-300">
-                          Odds {oddsLabel}
-                        </span>
-
-                        <p className="text-white/50">Creator stake</p>
-                        <p className="font-semibold text-white/85">{formatUSDC(bet.creatorAmountUi)}</p>
-
                         <p className="text-white/50">Opponent stake</p>
                         <p className="font-semibold text-white/85">{formatUSDC(bet.accepterAmountUi)}</p>
 
@@ -471,16 +497,18 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                  {bet.state === 'OPEN' ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleAcceptBet(bet)}
-                      disabled={acceptingBet === bet.pubkey}
-                      className="mt-3 rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {acceptingBet === bet.pubkey ? 'ACCEPTING...' : `ACCEPT BET • ${formatUSDC(toAccept)}`}
-                    </button>
-                  ) : null}
+                {bet.state === 'OPEN' ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleAcceptBet(bet)}
+                    disabled={acceptingBet === bet.pubkey}
+                    className="mt-3 rounded-md border border-neon/50 bg-neon/25 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-neon transition hover:bg-neon/35 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {acceptingBet === bet.pubkey
+                      ? 'ACCEPTING...'
+                      : `ACCEPT BET • ${formatUSDC(bet.accepterAmountRequiredUi)}`}
+                  </button>
+                ) : null}
               </article>
             );
           })}
