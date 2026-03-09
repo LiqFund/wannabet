@@ -400,13 +400,20 @@ function SectionCard(props: {
   return (
     <div className="rounded-2xl border border-white/10 bg-black/40 p-5 md:p-6">
       <div className="mb-4">
-        <div className="text-sm tracking-wide" style={{ color: "rgba(212,175,55,0.9)" }}>
+        <div
+          className="text-sm tracking-wide"
+          style={{ color: "rgba(212,175,55,0.9)" }}
+        >
           {props.subtitle ?? ""}
         </div>
-        <h2 className="mt-1 text-lg font-semibold text-white">{props.title}</h2>
+        <h2 className="mt-1 text-lg font-semibold text-white">
+          {props.title}
+        </h2>
         <div
           className="mt-3 h-px w-full"
-          style={{ background: `linear-gradient(90deg, ${gold}, rgba(255,255,255,0))` }}
+          style={{
+            background: `linear-gradient(90deg, ${gold}, rgba(255,255,255,0))`,
+          }}
         />
       </div>
       {props.children}
@@ -423,8 +430,12 @@ function FieldRow(props: {
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-[240px_1fr] md:gap-6">
       <div className="pt-2">
-        <div className="text-sm font-medium text-white/90">{props.label}</div>
-        {props.hint ? <div className="mt-1 text-xs text-white/55">{props.hint}</div> : null}
+        <div className="text-sm font-medium text-white/90">
+          {props.label}
+        </div>
+        {props.hint ? (
+          <div className="mt-1 text-xs text-white/55">{props.hint}</div>
+        ) : null}
       </div>
       <div className="min-w-0">
         <div className="flex items-start justify-between gap-3">
@@ -460,8 +471,10 @@ function Select({
     .filter(
       (
         child
-      ): child is React.ReactElement<{ value?: string; children?: React.ReactNode }> =>
-        React.isValidElement(child)
+      ): child is React.ReactElement<{
+        value?: string;
+        children?: React.ReactNode;
+      }> => React.isValidElement(child)
     )
     .map((child) => ({
       value: String(child.props.value ?? ""),
@@ -475,7 +488,9 @@ function Select({
     <UnifiedSelect
       value={String(value ?? "")}
       onValueChange={(nextValue) =>
-        onChange?.({ target: { value: nextValue } } as React.ChangeEvent<HTMLSelectElement>)
+        onChange?.({
+          target: { value: nextValue },
+        } as React.ChangeEvent<HTMLSelectElement>)
       }
       options={options}
       disabled={disabled}
@@ -506,7 +521,10 @@ function MiniButton(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   );
 }
 
-function SectorTabs(props: { value: Sector; onChange: (value: Sector) => void }) {
+function SectorTabs(props: {
+  value: Sector;
+  onChange: (value: Sector) => void;
+}) {
   return (
     <div className="flex flex-wrap gap-2">
       {SECTOR_OPTIONS.map((option) => {
@@ -533,8 +551,17 @@ function SectorTabs(props: { value: Sector; onChange: (value: Sector) => void })
 
 export default function BetCreatePage() {
   const gold = "#D4AF37";
-  const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
-  const oddsPresets = ["1-1", "2-1", "3-1", "4-1", "5-1", "10-1", "Custom"] as const;
+  const { publicKey, wallet, signTransaction, signAllTransactions } =
+    useWallet();
+  const oddsPresets = [
+    "1-1",
+    "2-1",
+    "3-1",
+    "4-1",
+    "5-1",
+    "10-1",
+    "Custom",
+  ] as const;
 
   const [sector, setSector] = useState<Sector>("Crypto");
   const [search, setSearch] = useState("");
@@ -545,24 +572,29 @@ export default function BetCreatePage() {
 
   const [sport, setSport] = useState<Sport>("MMA");
   const [eventId, setEventId] = useState<string>("");
-  const [sportsMarket, setSportsMarket] = useState<SportsMarket>("Moneyline");
+  const [sportsMarket, setSportsMarket] =
+    useState<SportsMarket>("Moneyline");
   const [pick, setPick] = useState<string>("");
   const [totalLine, setTotalLine] = useState<string>("");
   const [totalSide, setTotalSide] = useState<TotalSide>("Over");
   const [spreadLine, setSpreadLine] = useState<string>("");
-  const [methodPick, setMethodPick] = useState<"KO/TKO" | "Submission" | "Decision" | "Draw">(
-    "KO/TKO"
-  );
+  const [methodPick, setMethodPick] = useState<
+    "KO/TKO" | "Submission" | "Decision" | "Draw"
+  >("KO/TKO");
   const [roundPick, setRoundPick] = useState<string>("1");
 
-  const [expiryPreset, setExpiryPreset] = useState<"7D" | "30D" | "90D" | "Custom">("90D");
+  const [expiryPreset, setExpiryPreset] = useState<
+    "7D" | "30D" | "90D" | "Custom"
+  >("90D");
   const [expiryDate, setExpiryDate] = useState<string>("");
 
   const [comparatorA, setComparatorA] = useState<Comparator>("Above");
   const [strikeA, setStrikeA] = useState<string>("100000");
 
   const [stakeAmount, setStakeAmount] = useState<string>("100000");
-  const [oddsPreset, setOddsPreset] = useState<(typeof oddsPresets)[number]>("1-1");
+  const [oddsPreset, setOddsPreset] = useState<
+    (typeof oddsPresets)[number]
+  >("1-1");
   const [oddsX, setOddsX] = useState<string>("2");
 
   const [title, setTitle] = useState<string>("");
@@ -571,8 +603,14 @@ export default function BetCreatePage() {
   const [submitError, setSubmitError] = useState<string>("");
   const [submitSuccess, setSubmitSuccess] = useState<string>("");
 
-  const allowedBetTypes = useMemo(() => BET_TYPES_BY_SECTOR[sector], [sector]);
-  const activeSportMarkets = useMemo(() => SPORT_MARKET_MATRIX[sport], [sport]);
+  const allowedBetTypes = useMemo(
+    () => BET_TYPES_BY_SECTOR[sector],
+    [sector]
+  );
+  const activeSportMarkets = useMemo(
+    () => SPORT_MARKET_MATRIX[sport],
+    [sport]
+  );
   const sportEvents = useMemo(() => SPORTS_EVENTS[sport], [sport]);
 
   const toUtcInputValue = (iso: string) => (iso ? iso.slice(0, 16) : "");
@@ -582,18 +620,21 @@ export default function BetCreatePage() {
     if (!iso) return "Custom date";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "Custom date";
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(
-      d.getUTCDate()
-    ).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(
-      d.getUTCMinutes()
-    ).padStart(2, "0")} UTC`;
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getUTCDate()).padStart(2, "0")} ${String(
+      d.getUTCHours()
+    ).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")} UTC`;
   };
 
   const underlyingsForSector = useMemo(() => {
     const q = search.trim().toLowerCase();
     return UNDERLYINGS_BY_SECTOR[sector].filter((u) => {
       if (!q) return true;
-      return u.label.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
+      return (
+        u.label.toLowerCase().includes(q) || u.id.toLowerCase().includes(q)
+      );
     });
   }, [search, sector]);
 
@@ -620,12 +661,16 @@ export default function BetCreatePage() {
   useEffect(() => {
     if (betType !== "Relative Performance") return;
     const sectorUnderlyings = UNDERLYINGS_BY_SECTOR[sector];
-    const fallbackB = sectorUnderlyings.find((u) => u.id !== underlyingA)?.id ?? "";
+    const fallbackB =
+      sectorUnderlyings.find((u) => u.id !== underlyingA)?.id ?? "";
     if (!fallbackB) {
       setUnderlyingB("");
       return;
     }
-    if (underlyingB === underlyingA || !sectorUnderlyings.some((u) => u.id === underlyingB)) {
+    if (
+      underlyingB === underlyingA ||
+      !sectorUnderlyings.some((u) => u.id === underlyingB)
+    ) {
       setUnderlyingB(fallbackB);
     }
   }, [betType, sector, underlyingA, underlyingB]);
@@ -662,25 +707,30 @@ export default function BetCreatePage() {
 
   const makerStake = parseAmount(stakeAmount);
   const rawOddsX =
-    oddsPreset === "Custom" ? parseAmount(oddsX) : parseAmount(oddsPreset.split("-")[0]);
+    oddsPreset === "Custom"
+      ? parseAmount(oddsX)
+      : parseAmount(oddsPreset.split("-")[0]);
   const safeOddsX = rawOddsX > 0 ? rawOddsX : 1;
   const takerStake = makerStake > 0 ? makerStake / safeOddsX : 0;
 
   const makerAmountBaseUnits = Math.floor(makerStake * 1_000_000);
   const takerAmountBaseUnits = Math.floor(takerStake * 1_000_000);
 
+  const isSports = sector === "Sports";
+
   const derivedExpiryTs = useMemo(() => {
     const now = Math.floor(Date.now() / 1000);
 
+    if (isSports) return now + 90 * 24 * 60 * 60;
     if (expiryPreset === "7D") return now + 7 * 24 * 60 * 60;
     if (expiryPreset === "30D") return now + 30 * 24 * 60 * 60;
     if (expiryPreset === "90D") return now + 90 * 24 * 60 * 60;
 
     if (!expiryDate) return 0;
 
-    const customTs = Math.floor(new Date(expiryDate).getTime() / 1000);
+    const customTs = Math.floor(Date.parse(expiryDate) / 1000);
     return Number.isFinite(customTs) ? customTs : 0;
-  }, [expiryDate, expiryPreset]);
+  }, [expiryDate, expiryPreset, isSports]);
 
   const summary = useMemo(() => {
     if (sector === "Sports") {
@@ -692,7 +742,9 @@ export default function BetCreatePage() {
       if (sportsMarket === "Moneyline") {
         sportsCondition = `Winner: ${pick || "Not selected"}`;
       } else if (sportsMarket === "Total") {
-        sportsCondition = `${totalSide} ${totalLine || "?"} ${activeSportMarkets.totalUnit}`;
+        sportsCondition = `${totalSide} ${
+          totalLine || "?"
+        } ${activeSportMarkets.totalUnit}`;
       } else if (sportsMarket === "Spread") {
         sportsCondition = `${pick || "Pick side"} ${spreadLine || "?"}`;
       } else if (sportsMarket === "Draw No Bet") {
@@ -714,7 +766,9 @@ export default function BetCreatePage() {
         resolution: "Resolves at final result",
         makerEscrow: formatUSDC(makerStake),
         opponentRequired: formatUSDC(takerStake),
-        odds: `${safeOddsX.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
+        odds: `${safeOddsX.toLocaleString(undefined, {
+          maximumFractionDigits: 8,
+        })}-1`,
       };
     }
 
@@ -725,15 +779,17 @@ export default function BetCreatePage() {
       expiryPreset === "Custom"
         ? formatUtcLabel(expiryDate)
         : expiryPreset === "7D"
-          ? "7 days"
-          : expiryPreset === "30D"
-            ? "30 days"
-            : "90 days";
+        ? "7 days"
+        : expiryPreset === "30D"
+        ? "30 days"
+        : "90 days";
 
     let condition = "";
 
     if (betType === "Threshold") {
-      condition = `${A} ${comparatorA === "Above" ? ">" : "<"} ${formatNumber(strikeA)} at expiry`;
+      condition = `${A} ${
+        comparatorA === "Above" ? ">" : "<"
+      } ${formatNumber(strikeA)} at expiry`;
     } else if (betType === "Time-to-Touch") {
       condition = `${A} touches ${formatNumber(strikeA)} before expiry`;
     } else if (betType === "Relative Performance") {
@@ -748,7 +804,9 @@ export default function BetCreatePage() {
       condition,
       makerEscrow: formatUSDC(makerStake),
       opponentRequired: formatUSDC(takerStake),
-      odds: `${safeOddsX.toLocaleString(undefined, { maximumFractionDigits: 8 })}-1`,
+      odds: `${safeOddsX.toLocaleString(undefined, {
+        maximumFractionDigits: 8,
+      })}-1`,
       title: title.trim() || "Untitled bet",
       visibility: isPrivate ? "Private" : "Public",
     };
@@ -779,8 +837,6 @@ export default function BetCreatePage() {
     takerStake,
   ]);
 
-  const isSports = sector === "Sports";
-
   const moneylinePickOptions = useMemo(() => {
     const options: string[] = [];
     if (selectedEvent) {
@@ -809,11 +865,20 @@ export default function BetCreatePage() {
     if (!isSports) return [] as string[];
     const missing: string[] = [];
     if (!eventId) missing.push("select an event");
-    if (["Moneyline", "Spread", "Draw No Bet", "Method", "Round"].includes(sportsMarket) && !pick) {
+    if (
+      ["Moneyline", "Spread", "Draw No Bet", "Method", "Round"].includes(
+        sportsMarket
+      ) &&
+      !pick
+    ) {
       missing.push("choose a pick");
     }
-    if (sportsMarket === "Total" && !totalLine.trim()) missing.push("enter total line");
-    if (sportsMarket === "Spread" && !spreadLine.trim()) missing.push("enter spread line");
+    if (sportsMarket === "Total" && !totalLine.trim()) {
+      missing.push("enter total line");
+    }
+    if (sportsMarket === "Spread" && !spreadLine.trim()) {
+      missing.push("enter spread line");
+    }
     return missing;
   }, [eventId, isSports, pick, spreadLine, sportsMarket, totalLine]);
 
@@ -821,7 +886,10 @@ export default function BetCreatePage() {
 
   const configPda = useMemo(
     () =>
-      PublicKey.findProgramAddressSync([Buffer.from("config")], WANNABET_ESCROW_PROGRAM_ID)[0],
+      PublicKey.findProgramAddressSync(
+        [Buffer.from("config")],
+        WANNABET_ESCROW_PROGRAM_ID
+      )[0],
     []
   );
 
@@ -839,20 +907,29 @@ export default function BetCreatePage() {
       error instanceof Error
         ? `${error.name} ${error.message}`
         : typeof error === "string"
-          ? error
-          : JSON.stringify(error);
+        ? error
+        : JSON.stringify(error);
 
     const normalized = raw.toLowerCase();
 
-    if (normalized.includes("invalidoddsratio") || normalized.includes("invalid odds ratio")) {
+    if (
+      normalized.includes("invalidoddsratio") ||
+      normalized.includes("invalid odds ratio")
+    ) {
       return "Odds must stay between 1:1 and 100:1.";
     }
 
-    if (normalized.includes("invalidexpiry") || normalized.includes("invalid expiry")) {
+    if (
+      normalized.includes("invalidexpiry") ||
+      normalized.includes("invalid expiry")
+    ) {
       return "Expiry is invalid. Choose a later expiry time.";
     }
 
-    if (normalized.includes("invalidamount") || normalized.includes("invalid amount")) {
+    if (
+      normalized.includes("invalidamount") ||
+      normalized.includes("invalid amount")
+    ) {
       return "Stake amounts must be greater than 0.";
     }
 
@@ -860,7 +937,10 @@ export default function BetCreatePage() {
       return "Not enough USDC to create this bet. Lower the stake or fund your wallet.";
     }
 
-    if (normalized.includes("user rejected") || normalized.includes("rejected the request")) {
+    if (
+      normalized.includes("user rejected") ||
+      normalized.includes("rejected the request")
+    ) {
       return "Transaction was cancelled in your wallet.";
     }
 
@@ -963,7 +1043,9 @@ export default function BetCreatePage() {
         })
         .rpc();
 
-      setSubmitSuccess(`Devnet bet created. Bet: ${betPda.toBase58()} | TX: ${tx}`);
+      setSubmitSuccess(
+        `Devnet bet created. Bet: ${betPda.toBase58()} | TX: ${tx}`
+      );
     } catch (error) {
       console.error(error);
       setSubmitError(getFriendlyCreateErrorMessage(error));
@@ -984,10 +1066,15 @@ export default function BetCreatePage() {
       <div style={shellStyle} className="px-4 py-8 md:px-8">
         <div className="mx-auto w-full max-w-5xl">
           <div className="mb-6 flex flex-col gap-2">
-            <div className="text-xs tracking-wide text-white/55">Wanna Bet?</div>
-            <h1 className="text-2xl font-semibold text-white md:text-3xl">Create a bet</h1>
+            <div className="text-xs tracking-wide text-white/55">
+              Wanna Bet?
+            </div>
+            <h1 className="text-2xl font-semibold text-white md:text-3xl">
+              Create a bet
+            </h1>
             <div className="text-sm text-white/60">
-              Choose a sector, pick a market, set conditions, then preview the bet.
+              Choose a sector, pick a market, set conditions, then preview the
+              bet.
             </div>
           </div>
 
@@ -1042,7 +1129,9 @@ export default function BetCreatePage() {
 
                       {isPrivate ? (
                         <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                          <div className="text-xs font-medium text-white/70">Private link</div>
+                          <div className="text-xs font-medium text-white/70">
+                            Private link
+                          </div>
                           <div className="mt-1 rounded-lg border border-white/10 bg-black/60 px-3 py-2 text-sm text-white/45">
                             Will be generated after bet is created
                           </div>
@@ -1070,12 +1159,17 @@ export default function BetCreatePage() {
                         hint="Choose a sport first."
                         right={<Pill>Required</Pill>}
                       >
-                        <Select value={sport} onChange={(e) => setSport(e.target.value as Sport)}>
-                          {(Object.keys(SPORTS_EVENTS) as Sport[]).map((sportOption) => (
-                            <option key={sportOption} value={sportOption}>
-                              {sportOption}
-                            </option>
-                          ))}
+                        <Select
+                          value={sport}
+                          onChange={(e) => setSport(e.target.value as Sport)}
+                        >
+                          {(Object.keys(SPORTS_EVENTS) as Sport[]).map(
+                            (sportOption) => (
+                              <option key={sportOption} value={sportOption}>
+                                {sportOption}
+                              </option>
+                            )
+                          )}
                         </Select>
                       </FieldRow>
                       <FieldRow
@@ -1083,7 +1177,10 @@ export default function BetCreatePage() {
                         hint="Pick a matchup from mock data."
                         right={<Pill>Required</Pill>}
                       >
-                        <Select value={eventId} onChange={(e) => setEventId(e.target.value)}>
+                        <Select
+                          value={eventId}
+                          onChange={(e) => setEventId(e.target.value)}
+                        >
                           <option value="">Select an event</option>
                           {sportEvents.map((event) => (
                             <option key={event.id} value={event.id}>
@@ -1095,7 +1192,10 @@ export default function BetCreatePage() {
                     </>
                   ) : (
                     <>
-                      <FieldRow label="Search underlyings" hint="Filter by ticker or name.">
+                      <FieldRow
+                        label="Search underlyings"
+                        hint="Filter by ticker or name."
+                      >
                         <Input
                           value={search}
                           onChange={(e) => setSearch(e.target.value)}
@@ -1108,7 +1208,10 @@ export default function BetCreatePage() {
                         hint="Primary market used in the bet condition."
                         right={<Pill>Required</Pill>}
                       >
-                        <Select value={underlyingA} onChange={(e) => setUnderlyingA(e.target.value)}>
+                        <Select
+                          value={underlyingA}
+                          onChange={(e) => setUnderlyingA(e.target.value)}
+                        >
                           {aOptions.map((u) => (
                             <option key={u.id} value={u.id}>
                               {u.label}
@@ -1135,7 +1238,9 @@ export default function BetCreatePage() {
                       >
                         <Select
                           value={sportsMarket}
-                          onChange={(e) => setSportsMarket(e.target.value as SportsMarket)}
+                          onChange={(e) =>
+                            setSportsMarket(e.target.value as SportsMarket)
+                          }
                         >
                           {activeSportMarkets.markets.map((market) => (
                             <option key={market} value={market}>
@@ -1146,7 +1251,9 @@ export default function BetCreatePage() {
                       </FieldRow>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-sm font-medium text-white/85">What this means</div>
+                        <div className="text-sm font-medium text-white/85">
+                          What this means
+                        </div>
                         <div className="mt-1 text-sm text-white/60">
                           {SPORTS_MARKET_DESC[sportsMarket]}
                         </div>
@@ -1182,7 +1289,9 @@ export default function BetCreatePage() {
                           >
                             <Select
                               value={totalSide}
-                              onChange={(e) => setTotalSide(e.target.value as TotalSide)}
+                              onChange={(e) =>
+                                setTotalSide(e.target.value as TotalSide)
+                              }
                             >
                               <option value="Over">Over</option>
                               <option value="Under">Under</option>
@@ -1218,8 +1327,12 @@ export default function BetCreatePage() {
                               <option value="">Select a side</option>
                               {selectedEvent ? (
                                 <>
-                                  <option value={selectedEvent.a}>{selectedEvent.a}</option>
-                                  <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                                  <option value={selectedEvent.a}>
+                                    {selectedEvent.a}
+                                  </option>
+                                  <option value={selectedEvent.b}>
+                                    {selectedEvent.b}
+                                  </option>
                                 </>
                               ) : null}
                             </Select>
@@ -1254,8 +1367,12 @@ export default function BetCreatePage() {
                               <option value="">Select a side</option>
                               {selectedEvent ? (
                                 <>
-                                  <option value={selectedEvent.a}>{selectedEvent.a}</option>
-                                  <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                                  <option value={selectedEvent.a}>
+                                    {selectedEvent.a}
+                                  </option>
+                                  <option value={selectedEvent.b}>
+                                    {selectedEvent.b}
+                                  </option>
                                 </>
                               ) : null}
                             </Select>
@@ -1282,8 +1399,12 @@ export default function BetCreatePage() {
                               <option value="">Select winner</option>
                               {selectedEvent ? (
                                 <>
-                                  <option value={selectedEvent.a}>{selectedEvent.a}</option>
-                                  <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                                  <option value={selectedEvent.a}>
+                                    {selectedEvent.a}
+                                  </option>
+                                  <option value={selectedEvent.b}>
+                                    {selectedEvent.b}
+                                  </option>
                                 </>
                               ) : null}
                             </Select>
@@ -1297,7 +1418,9 @@ export default function BetCreatePage() {
                             <Select
                               value={methodPick}
                               onChange={(e) =>
-                                setMethodPick(e.target.value as typeof methodPick)
+                                setMethodPick(
+                                  e.target.value as typeof methodPick
+                                )
                               }
                             >
                               {methodOptions.map((method) => (
@@ -1325,8 +1448,12 @@ export default function BetCreatePage() {
                               <option value="">Select winner</option>
                               {selectedEvent ? (
                                 <>
-                                  <option value={selectedEvent.a}>{selectedEvent.a}</option>
-                                  <option value={selectedEvent.b}>{selectedEvent.b}</option>
+                                  <option value={selectedEvent.a}>
+                                    {selectedEvent.a}
+                                  </option>
+                                  <option value={selectedEvent.b}>
+                                    {selectedEvent.b}
+                                  </option>
                                 </>
                               ) : null}
                             </Select>
@@ -1337,7 +1464,10 @@ export default function BetCreatePage() {
                             hint="Wins in that round."
                             right={<Pill>Required</Pill>}
                           >
-                            <Select value={roundPick} onChange={(e) => setRoundPick(e.target.value)}>
+                            <Select
+                              value={roundPick}
+                              onChange={(e) => setRoundPick(e.target.value)}
+                            >
                               {Array.from(
                                 { length: activeSportMarkets.roundsMax ?? 1 },
                                 (_, i) => String(i + 1)
@@ -1358,7 +1488,12 @@ export default function BetCreatePage() {
                         hint="Pick the contract form you want."
                         right={<Pill>Required</Pill>}
                       >
-                        <Select value={betType} onChange={(e) => setBetType(e.target.value as BetType)}>
+                        <Select
+                          value={betType}
+                          onChange={(e) =>
+                            setBetType(e.target.value as BetType)
+                          }
+                        >
                           {allowedBetTypes.map((b) => (
                             <option key={b} value={b}>
                               {b}
@@ -1368,8 +1503,12 @@ export default function BetCreatePage() {
                       </FieldRow>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-sm font-medium text-white/85">What this means</div>
-                        <div className="mt-1 text-sm text-white/60">{BET_TYPE_DESC[betType]}</div>
+                        <div className="text-sm font-medium text-white/85">
+                          What this means
+                        </div>
+                        <div className="mt-1 text-sm text-white/60">
+                          {BET_TYPE_DESC[betType]}
+                        </div>
                       </div>
                     </>
                   )}
@@ -1407,16 +1546,24 @@ export default function BetCreatePage() {
 
                       {betType === "Threshold" && (
                         <>
-                          <FieldRow label="Direction" hint="Above or below the target.">
+                          <FieldRow
+                            label="Direction"
+                            hint="Above or below the target."
+                          >
                             <Select
                               value={comparatorA}
-                              onChange={(e) => setComparatorA(e.target.value as Comparator)}
+                              onChange={(e) =>
+                                setComparatorA(e.target.value as Comparator)
+                              }
                             >
                               <option value="Above">Above</option>
                               <option value="Below">Below</option>
                             </Select>
                           </FieldRow>
-                          <FieldRow label="Strike level" hint="Numeric level evaluated at expiry.">
+                          <FieldRow
+                            label="Strike level"
+                            hint="Numeric level evaluated at expiry."
+                          >
                             <Input
                               value={strikeA}
                               onChange={(e) => setStrikeA(e.target.value)}
@@ -1427,7 +1574,10 @@ export default function BetCreatePage() {
                       )}
 
                       {betType === "Time-to-Touch" && (
-                        <FieldRow label="Touch level" hint="Any touch before expiry resolves YES.">
+                        <FieldRow
+                          label="Touch level"
+                          hint="Any touch before expiry resolves YES."
+                        >
                           <Input
                             value={strikeA}
                             onChange={(e) => setStrikeA(e.target.value)}
@@ -1439,8 +1589,8 @@ export default function BetCreatePage() {
                       {betType === "Relative Performance" && (
                         <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                           <div className="text-sm text-white/80">
-                            Outperformance is based on percent change from start to end of the selected
-                            period.
+                            Outperformance is based on percent change from start
+                            to end of the selected period.
                           </div>
                         </div>
                       )}
@@ -1449,25 +1599,32 @@ export default function BetCreatePage() {
 
                   <SectionCard title="4) Timing" subtitle="Step 4">
                     <div className="flex flex-col gap-5">
-                      <FieldRow label="Expiry preset" hint="Preset keeps your slip evergreen.">
+                      <FieldRow
+                        label="Expiry preset"
+                        hint="Preset keeps your slip evergreen."
+                      >
                         <div className="flex flex-wrap gap-2">
-                          {(["7D", "30D", "90D", "Custom"] as const).map((p) => (
-                            <MiniButton
-                              key={p}
-                              onClick={() => setExpiryPreset(p)}
-                              aria-pressed={expiryPreset === p}
-                              style={
-                                expiryPreset === p
-                                  ? {
-                                      borderColor: "rgba(212,175,55,0.55)",
-                                      background: "rgba(212,175,55,0.10)",
-                                    }
-                                  : undefined
-                              }
-                            >
-                              {p === "Custom" ? "Custom" : p}
-                            </MiniButton>
-                          ))}
+                          {(["7D", "30D", "90D", "Custom"] as const).map(
+                            (p) => (
+                              <MiniButton
+                                key={p}
+                                onClick={() => setExpiryPreset(p)}
+                                aria-pressed={expiryPreset === p}
+                                style={
+                                  expiryPreset === p
+                                    ? {
+                                        borderColor:
+                                          "rgba(212,175,55,0.55)",
+                                        background:
+                                          "rgba(212,175,55,0.10)",
+                                      }
+                                    : undefined
+                                }
+                              >
+                                {p === "Custom" ? "Custom" : p}
+                              </MiniButton>
+                            )
+                          )}
                         </div>
                       </FieldRow>
 
@@ -1480,9 +1637,13 @@ export default function BetCreatePage() {
                             <Input
                               type="datetime-local"
                               value={toUtcInputValue(expiryDate)}
-                              onChange={(e) => setExpiryDate(fromUtcInputValue(e.target.value))}
+                              onChange={(e) =>
+                                setExpiryDate(fromUtcInputValue(e.target.value))
+                              }
                             />
-                            <div className="text-xs text-white/55">Stored/displayed as UTC</div>
+                            <div className="text-xs text-white/55">
+                              Stored/displayed as UTC
+                            </div>
                           </div>
                         </FieldRow>
                       ) : null}
@@ -1496,7 +1657,10 @@ export default function BetCreatePage() {
                 subtitle={isSports ? "Step 4" : "Step 5"}
               >
                 <div className="flex flex-col gap-5">
-                  <FieldRow label="Stake (USDC)" hint="Amount you escrow as maker.">
+                  <FieldRow
+                    label="Stake (USDC)"
+                    hint="Amount you escrow as maker."
+                  >
                     <Input
                       value={stakeAmount}
                       onChange={(e) => setStakeAmount(e.target.value)}
@@ -1512,7 +1676,9 @@ export default function BetCreatePage() {
                       <Select
                         value={oddsPreset}
                         onChange={(e) =>
-                          setOddsPreset(e.target.value as (typeof oddsPresets)[number])
+                          setOddsPreset(
+                            e.target.value as (typeof oddsPresets)[number]
+                          )
                         }
                       >
                         {oddsPresets.map((preset) => (
@@ -1551,8 +1717,12 @@ export default function BetCreatePage() {
             <div className="lg:sticky lg:top-6">
               <div className="rounded-2xl border border-white/10 bg-black/50 p-5 md:p-6">
                 <div>
-                  <div className="text-xs tracking-wide text-white/55">Preview</div>
-                  <div className="mt-1 text-lg font-semibold text-white">{summary.title}</div>
+                  <div className="text-xs tracking-wide text-white/55">
+                    Preview
+                  </div>
+                  <div className="mt-1 text-lg font-semibold text-white">
+                    {summary.title}
+                  </div>
                 </div>
 
                 <div className="mt-5 space-y-3">
@@ -1560,71 +1730,103 @@ export default function BetCreatePage() {
                     <>
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Sport</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.sport}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.sport}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Event</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.event}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.event}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Market</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.market}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.market}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-xs text-white/55">Pick / Condition</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.condition}</div>
+                        <div className="text-xs text-white/55">
+                          Pick / Condition
+                        </div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.condition}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                        <div className="text-xs text-white/55">Resolution</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.resolution}</div>
+                        <div className="text-xs text-white/55">
+                          Resolution
+                        </div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.resolution}
+                        </div>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Sector</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.sector}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.sector}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Type</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.betType}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.betType}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Condition</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.condition}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.condition}
+                        </div>
                       </div>
 
                       <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                         <div className="text-xs text-white/55">Expiry</div>
-                        <div className="mt-1 text-sm text-white/85">{summary.expiry}</div>
+                        <div className="mt-1 text-sm text-white/85">
+                          {summary.expiry}
+                        </div>
                       </div>
                     </>
                   )}
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="text-xs text-white/55">Maker escrow</div>
-                    <div className="mt-1 text-sm text-white/85">{summary.makerEscrow}</div>
+                    <div className="mt-1 text-sm text-white/85">
+                      {summary.makerEscrow}
+                    </div>
                   </div>
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
-                    <div className="text-xs text-white/55">Opponent required</div>
-                    <div className="mt-1 text-sm text-white/85">{summary.opponentRequired}</div>
+                    <div className="text-xs text-white/55">
+                      Opponent required
+                    </div>
+                    <div className="mt-1 text-sm text-white/85">
+                      {summary.opponentRequired}
+                    </div>
                   </div>
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="text-xs text-white/55">Odds</div>
-                    <div className="mt-1 text-sm text-white/85">{summary.odds}</div>
+                    <div className="mt-1 text-sm text-white/85">
+                      {summary.odds}
+                    </div>
                   </div>
 
                   <div className="rounded-xl border border-white/10 bg-white/5 p-4">
                     <div className="text-xs text-white/55">Visibility</div>
-                    <div className="mt-1 text-sm text-white/85">{summary.visibility}</div>
+                    <div className="mt-1 text-sm text-white/85">
+                      {summary.visibility}
+                    </div>
                   </div>
                 </div>
 
@@ -1666,8 +1868,14 @@ export default function BetCreatePage() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4">
           <div className="w-full max-w-lg rounded-2xl border border-emerald-500/30 bg-[#07110d] p-6 shadow-2xl">
             <div className="flex items-center gap-4">
-              <img src="/icon.ico" alt="Wannabet logo" className="h-16 w-auto" />
-              <h3 className="text-2xl font-semibold text-white">Bet created successfully</h3>
+              <img
+                src="/icon.ico"
+                alt="Wannabet logo"
+                className="h-16 w-auto"
+              />
+              <h3 className="text-2xl font-semibold text-white">
+                Bet created successfully
+              </h3>
             </div>
 
             <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-100">
