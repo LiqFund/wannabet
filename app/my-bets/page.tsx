@@ -16,6 +16,7 @@ type RealBet = {
   accepter: string;
   mint: string;
   creatorAmountUi: number;
+  accepterAmountRequiredUi: number;
   accepterAmountUi: number;
   expiryTs: number;
   state: string;
@@ -25,11 +26,12 @@ type RealBet = {
   betId: string;
 };
 
-function getStateLabel(state: Record<string, unknown>) {
-  if (state.open) return 'OPEN';
-  if (state.locked) return 'LOCKED';
-  if (state.cancelled) return 'CANCELLED';
-  if (state.resolved) return 'RESOLVED';
+function getStateLabel(state: Record<string, unknown> | null | undefined) {
+  if (!state || typeof state !== 'object') return 'UNKNOWN';
+  if ('open' in state) return 'OPEN';
+  if ('locked' in state) return 'LOCKED';
+  if ('cancelled' in state) return 'CANCELLED';
+  if ('resolved' in state) return 'RESOLVED';
   return 'UNKNOWN';
 }
 
@@ -49,6 +51,56 @@ function formatRemaining(expiryTs: number) {
   if (minutes > 0) return `${minutes}M`;
 
   return `${diff}S`;
+}
+
+function formatStakeRatio(left: number, right: number) {
+  if (left <= 0 || right <= 0) return 'N/A';
+
+  const larger = Math.max(left, right);
+  const smaller = Math.min(left, right);
+  const ratio = larger / smaller;
+
+  if (Number.isInteger(ratio)) {
+    return `${ratio}:1`;
+  }
+
+  return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
+}
+
+function readAnchorNumberLike(
+  value: { toNumber?: () => number; toString?: () => string } | null | undefined,
+  fallback = 0
+) {
+  if (!value) return fallback;
+
+  if (typeof value.toNumber === 'function') {
+    return value.toNumber();
+  }
+
+  if (typeof value.toString === 'function') {
+    const parsed = Number(value.toString());
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  return fallback;
+}
+
+function readAnchorPubkeyLike(
+  value: { toBase58?: () => string; toString?: () => string } | null | undefined,
+  fallback = PublicKey.default.toBase58()
+) {
+  if (!value) return fallback;
+
+  if (typeof value.toBase58 === 'function') {
+    return value.toBase58();
+  }
+
+  if (typeof value.toString === 'function') {
+    const parsed = value.toString();
+    return parsed || fallback;
+  }
+
+  return fallback;
 }
 
 function getFriendlyCancelErrorMessage(error: unknown) {
@@ -117,7 +169,9 @@ export default function MyBetsPage() {
         provider
       );
 
-      const accounts = await (program.account as unknown as { bet: { all: () => Promise<unknown[]> } }).bet.all();
+      const accounts = await (program.account as unknown as {
+        bet: { all: () => Promise<unknown[]> };
+      }).bet.all();
 
       const mapped: RealBet[] = accounts
         .map((item) => {
@@ -127,47 +181,45 @@ export default function MyBetsPage() {
           };
 
           const account = typedItem.account as Record<string, unknown> & {
-            creator: { toBase58: () => string };
-            accepter: { toBase58: () => string };
-            mint: { toBase58: () => string };
-            creatorAmount: { toNumber?: () => number; toString: () => string };
-            accepterAmount: { toNumber?: () => number; toString: () => string };
-            expiryTs: { toNumber?: () => number; toString: () => string };
-            state: Record<string, unknown>;
-            creatorSide: number;
-            accepterSide: number;
-            winnerSide: number;
-            betId: { toString: () => string };
+            creator?: { toBase58?: () => string; toString?: () => string } | null;
+            accepter?: { toBase58?: () => string; toString?: () => string } | null;
+            mint?: { toBase58?: () => string; toString?: () => string } | null;
+            creatorAmount?: { toNumber?: () => number; toString?: () => string } | null;
+            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string } | null;
+            accepterAmount?: { toNumber?: () => number; toString?: () => string } | null;
+            expiryTs?: { toNumber?: () => number; toString?: () => string } | null;
+            state?: Record<string, unknown> | null;
+            creatorSide?: number | null;
+            accepterSide?: number | null;
+            winnerSide?: number | null;
+            betId?: { toString?: () => string } | null;
           };
 
-          const creatorAmountBase =
-            typeof account.creatorAmount?.toNumber === 'function'
-              ? account.creatorAmount.toNumber()
-              : Number(account.creatorAmount.toString());
-
-          const accepterAmountBase =
-            typeof account.accepterAmount?.toNumber === 'function'
-              ? account.accepterAmount.toNumber()
-              : Number(account.accepterAmount.toString());
-
-          const expiryTs =
-            typeof account.expiryTs?.toNumber === 'function'
-              ? account.expiryTs.toNumber()
-              : Number(account.expiryTs.toString());
+          const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
+          const accepterAmountRequiredBase = readAnchorNumberLike(
+            account.accepterAmountRequired,
+            creatorAmountBase
+          );
+          const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
+          const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
           return {
             pubkey: typedItem.publicKey.toBase58(),
-            creator: account.creator.toBase58(),
-            accepter: account.accepter.toBase58(),
-            mint: account.mint.toBase58(),
+            creator: readAnchorPubkeyLike(account.creator),
+            accepter: readAnchorPubkeyLike(account.accepter),
+            mint: readAnchorPubkeyLike(account.mint),
             creatorAmountUi: creatorAmountBase / 1_000_000,
+            accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
             accepterAmountUi: accepterAmountBase / 1_000_000,
             expiryTs,
             state: getStateLabel(account.state),
-            creatorSide: account.creatorSide,
-            accepterSide: account.accepterSide,
-            winnerSide: account.winnerSide,
-            betId: account.betId.toString(),
+            creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
+            accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
+            winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
+            betId:
+              account.betId && typeof account.betId.toString === 'function'
+                ? account.betId.toString()
+                : '0',
           };
         })
         .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
@@ -295,11 +347,11 @@ export default function MyBetsPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-white/10 bg-panel p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">Live devnet wallet view</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-white">My Bets</h1>
-        <p className="mt-2 text-sm text-white/70">
-          Track bets you created and bets you accepted.
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/50">
+          Live devnet wallet view
         </p>
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-white">My Bets</h1>
+        <p className="mt-2 text-sm text-white/70">Track bets you created and bets you accepted.</p>
       </section>
 
       {!publicKey ? (
@@ -339,9 +391,7 @@ export default function MyBetsPage() {
               type="button"
               onClick={() => setActiveTab('CREATED')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                activeTab === 'CREATED'
-                  ? 'bg-neon/25 text-neon'
-                  : 'text-white/60 hover:text-white'
+                activeTab === 'CREATED' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
               }`}
             >
               Created by me ({createdByMe.length})
@@ -350,9 +400,7 @@ export default function MyBetsPage() {
               type="button"
               onClick={() => setActiveTab('ACCEPTED')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                activeTab === 'ACCEPTED'
-                  ? 'bg-neon/25 text-neon'
-                  : 'text-white/60 hover:text-white'
+                activeTab === 'ACCEPTED' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
               }`}
             >
               Accepted by me ({acceptedByMe.length})
@@ -363,21 +411,39 @@ export default function MyBetsPage() {
 
       {publicKey && !loading && !error && visibleBets.length === 0 ? (
         <section className="rounded-xl border border-white/10 bg-panel p-5 text-sm text-white/70">
-          {activeTab === 'CREATED' ? 'You have not created any bets yet.' : 'You have not accepted any bets yet.'}
+          {activeTab === 'CREATED'
+            ? 'You have not created any bets yet.'
+            : 'You have not accepted any bets yet.'}
         </section>
       ) : null}
 
       {publicKey && !loading && !error && visibleBets.length > 0 ? (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {visibleBets.map((bet) => {
-            const totalPot = bet.creatorAmountUi + bet.accepterAmountUi;
-            const oddsLabel =
-              bet.accepterAmountUi > 0
-                ? `${(bet.creatorAmountUi / bet.accepterAmountUi).toFixed(2).replace(/\.00$/, '')}-1`
-                : '1-1';
-            const canCancel =
-              activeTab === 'CREATED' &&
-              bet.state === 'OPEN';
+            const isAcceptedView = activeTab === 'ACCEPTED';
+            const displayedOpponentStake =
+              bet.state === 'OPEN' ? bet.accepterAmountRequiredUi : bet.accepterAmountUi;
+            const totalPot = bet.creatorAmountUi + displayedOpponentStake;
+            const oddsLabel = formatStakeRatio(bet.creatorAmountUi, displayedOpponentStake);
+            const canCancel = activeTab === 'CREATED' && bet.state === 'OPEN';
+
+            const opponentDisplay = isAcceptedView
+              ? shortAddress(bet.creator)
+              : bet.accepterAmountUi > 0
+                ? shortAddress(bet.accepter)
+                : 'Unfilled';
+
+            const yourStakeAmount = isAcceptedView ? bet.accepterAmountUi : bet.creatorAmountUi;
+
+            const opponentStakeAmount =
+              bet.state === 'OPEN'
+                ? bet.accepterAmountRequiredUi
+                : isAcceptedView
+                  ? bet.creatorAmountUi
+                  : bet.accepterAmountUi;
+
+            const opponentStakeLabel =
+              bet.state === 'OPEN' ? 'Opponent stake required' : 'Opponent stake';
 
             return (
               <article
@@ -413,15 +479,13 @@ export default function MyBetsPage() {
                     </span>
 
                     <p className="text-white/50">Opponent</p>
-                    <p className="font-semibold text-white/85">
-                      {bet.accepterAmountUi > 0 ? shortAddress(bet.accepter) : 'Unfilled'}
-                    </p>
+                    <p className="font-semibold text-white/85">{opponentDisplay}</p>
 
-                    <p className="text-white/50">Creator stake</p>
-                    <p className="font-semibold text-white/85">{formatUSDC(bet.creatorAmountUi)}</p>
+                    <p className="text-white/50">Your stake</p>
+                    <p className="font-semibold text-white/85">{formatUSDC(yourStakeAmount)}</p>
 
-                    <p className="text-white/50">Opponent stake</p>
-                    <p className="font-semibold text-white/85">{formatUSDC(bet.accepterAmountUi)}</p>
+                    <p className="text-white/50">{opponentStakeLabel}</p>
+                    <p className="font-semibold text-white/85">{formatUSDC(opponentStakeAmount)}</p>
 
                     <p className="text-white/50">Time remaining</p>
                     <p className="font-semibold text-white/85">{formatRemaining(bet.expiryTs)}</p>

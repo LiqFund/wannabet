@@ -28,8 +28,8 @@ type RealBet = {
 
 const DEFAULT_PUBKEY = PublicKey.default.toBase58();
 
-function shortAddress(value: string) {
-  return `${value.slice(0, 6)}...${value.slice(-4)}`;
+function getUserDisplay(value: string) {
+  return value.slice(0, 5);
 }
 
 function formatRemaining(expiryTs: number) {
@@ -145,19 +145,18 @@ export default function HomePage() {
         provider
       );
 
-      const rawAccounts = await connection.getProgramAccounts(WANNABET_ESCROW_PROGRAM_ID, {
-        commitment: 'confirmed',
-      });
+      const accounts = await (program.account as unknown as {
+        bet: { all: () => Promise<unknown[]> };
+      }).bet.all();
 
-      const mapped: RealBet[] = [];
+      const mapped: RealBet[] = accounts
+        .map((item) => {
+          const typedItem = item as {
+            publicKey: { toBase58: () => string };
+            account: Record<string, unknown>;
+          };
 
-      for (const rawAccount of rawAccounts) {
-        try {
-          const decoded = (program.coder.accounts as unknown as {
-            decode: (name: string, data: Buffer) => Record<string, unknown>;
-          }).decode('Bet', rawAccount.account.data);
-
-          const account = decoded as Record<string, unknown> & {
+          const account = typedItem.account as Record<string, unknown> & {
             creator?: { toBase58?: () => string; toString?: () => string } | null;
             accepter?: { toBase58?: () => string; toString?: () => string } | null;
             mint?: { toBase58?: () => string; toString?: () => string } | null;
@@ -180,8 +179,8 @@ export default function HomePage() {
           const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
           const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
-          const bet: RealBet = {
-            pubkey: rawAccount.pubkey.toBase58(),
+          return {
+            pubkey: typedItem.publicKey.toBase58(),
             creator: readAnchorPubkeyLike(account.creator),
             accepter: readAnchorPubkeyLike(account.accepter),
             mint: readAnchorPubkeyLike(account.mint),
@@ -198,18 +197,10 @@ export default function HomePage() {
                 ? account.betId.toString()
                 : '0',
           };
+        })
+        .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
+        .sort((a, b) => b.expiryTs - a.expiryTs);
 
-          if (bet.mint !== WANNABET_DEVNET_TEST_MINT.toBase58()) {
-            continue;
-          }
-
-          mapped.push(bet);
-        } catch (decodeErr) {
-          console.warn('Skipping incompatible devnet bet account:', rawAccount.pubkey.toBase58(), decodeErr);
-        }
-      }
-
-      mapped.sort((a, b) => b.expiryTs - a.expiryTs);
       setBets(mapped);
     } catch (err) {
       console.error(err);
@@ -275,11 +266,17 @@ export default function HomePage() {
       return 'Not enough USDC to accept this bet.';
     }
 
-    if (normalized.includes('creatorcannotaccept') || normalized.includes('bet creator cannot accept their own bet')) {
+    if (
+      normalized.includes('creatorcannotaccept') ||
+      normalized.includes('bet creator cannot accept their own bet')
+    ) {
       return 'You cannot accept your own bet. Switch to a different wallet.';
     }
 
-    if (normalized.includes('amountmustmatchrequired') || normalized.includes('amount must match required')) {
+    if (
+      normalized.includes('amountmustmatchrequired') ||
+      normalized.includes('amount must match required')
+    ) {
       return 'The accept amount no longer matches the required opponent stake.';
     }
 
@@ -419,9 +416,7 @@ export default function HomePage() {
               type="button"
               onClick={() => setMarketView('AVAILABLE')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                marketView === 'AVAILABLE'
-                  ? 'bg-neon/25 text-neon'
-                  : 'text-white/60 hover:text-white'
+                marketView === 'AVAILABLE' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
               }`}
             >
               Available ({openBets.length})
@@ -430,9 +425,7 @@ export default function HomePage() {
               type="button"
               onClick={() => setMarketView('IN_PLAY')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                marketView === 'IN_PLAY'
-                  ? 'bg-neon/25 text-neon'
-                  : 'text-white/60 hover:text-white'
+                marketView === 'IN_PLAY' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
               }`}
             >
               In Play ({lockedBets.length})
@@ -464,10 +457,15 @@ export default function HomePage() {
       {!loading && !error && visibleBets.length > 0 ? (
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {visibleBets.map((bet) => {
-            const requiredOpponentStake =
+            const displayedOpponentStake =
               bet.state === 'OPEN' ? bet.accepterAmountRequiredUi : bet.accepterAmountUi;
-            const totalPot = bet.creatorAmountUi + requiredOpponentStake;
-            const oddsLabel = formatStakeRatio(bet.creatorAmountUi, bet.accepterAmountRequiredUi);
+            const totalPot = bet.creatorAmountUi + displayedOpponentStake;
+            const oddsLabel = formatStakeRatio(bet.creatorAmountUi, displayedOpponentStake);
+            const creatorDisplay = getUserDisplay(bet.creator);
+            const opponentDisplay =
+              bet.state === 'OPEN' || bet.accepter === DEFAULT_PUBKEY
+                ? 'Open'
+                : getUserDisplay(bet.accepter);
 
             return (
               <article
@@ -475,12 +473,13 @@ export default function HomePage() {
                 className="bet-card hud-card flex h-full flex-col rounded-md border border-white/10 bg-panel p-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-1">
+                  <div className="min-w-0 space-y-1">
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-white/45">
-                      Creator
+                      Matchup
                     </p>
-                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/90">
-                      {shortAddress(bet.creator)}
+                    <p className="truncate text-xs font-semibold tracking-[0.04em] text-white/90">
+                      <span>{creatorDisplay}</span> <span className="text-white/45">vs</span>{' '}
+                      <span>{opponentDisplay}</span>
                     </p>
                   </div>
                   <span

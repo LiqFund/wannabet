@@ -184,21 +184,18 @@ export default async function BetDetailPage({ params }: { params: { id: string }
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-white/15 bg-panel/95 p-5 shadow-magenta transition hover:-translate-y-0.5 hover:border-white/20">
           <h2 className="font-semibold tracking-tight text-neon">Bet details</h2>
-          <ul className="mt-3 space-y-2 text-sm text-white/80">
+          <ul className="mt-3 space-y-2 break-all text-sm text-white/80">
             <li>State: {bet.state}</li>
             <li>Bet account: {bet.pubkey}</li>
             <li>Internal bet id: {bet.betId}</li>
-            <li>Mint: {shortAddress(bet.mint)}</li>
-            <li>Creator: {shortAddress(bet.creator)}</li>
-            <li>Taker: {isMatched ? shortAddress(bet.accepter) : 'Unfilled'}</li>
+            <li>Mint: {bet.mint}</li>
+            <li>Creator: {bet.creator}</li>
+            <li>Opponent: {isMatched ? bet.accepter : 'Unfilled'}</li>
             <li>Stake ratio: {stakeRatio}</li>
-            <li>Creator escrow: {formatUSDC(bet.creatorAmountUi)}</li>
+            <li>Creator stake: {formatUSDC(bet.creatorAmountUi)}</li>
+            <li>Opponent stake required: {formatUSDC(bet.accepterAmountRequiredUi)}</li>
             <li>
-              Opponent stake required: {formatUSDC(bet.accepterAmountRequiredUi)}
-            </li>
-            <li>
-              Opponent escrow posted:{' '}
-              {isMatched ? formatUSDC(bet.accepterAmountUi) : 'Not filled yet'}
+              Opponent stake posted: {isMatched ? formatUSDC(bet.accepterAmountUi) : 'Not filled yet'}
             </li>
             <li>Total pot: {formatUSDC(totalPot)}</li>
           </ul>
@@ -209,7 +206,7 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>Expires: {formatExpiryUtc(bet.expiryTs)}</li>
             <li>Creator side: {bet.creatorSide}</li>
-            <li>Taker side: {bet.accepterSide}</li>
+            <li>Opponent side: {bet.accepterSide}</li>
             <li>Winner side: {bet.winnerSide}</li>
             <li>Matched: {isMatched ? 'Yes' : 'No'}</li>
           </ul>
