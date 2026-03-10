@@ -3,6 +3,9 @@ import { PublicKey } from '@solana/web3.js';
 const allowedNetworks = ['devnet', 'mainnet-beta'] as const;
 type SolanaNetwork = (typeof allowedNetworks)[number];
 
+const currentDevnetProgramId = '36r1hGZPxnwoJRuDQ7Qqf5ndx2FHLRKcQ3iFivkoxZ2L';
+const currentDevnetMint = '41HMG3gXWky6c5HRo7z9moHuPWc2dk7EXQRxwEa2huqu';
+
 const rawEnv = {
   NEXT_PUBLIC_SOLANA_NETWORK: process.env.NEXT_PUBLIC_SOLANA_NETWORK,
   NEXT_PUBLIC_SOLANA_RPC_URL: process.env.NEXT_PUBLIC_SOLANA_RPC_URL,
@@ -48,14 +51,14 @@ const wannabetMint = parsePublicKey(
 
 if (
   solanaNetwork === 'mainnet-beta' &&
-  wannabetMint.toBase58() === '41HMG3gXWky6c5HRo7z9moHuPWc2dk7EXQRxwEa2huqu'
+  wannabetMint.toBase58() === currentDevnetMint
 ) {
   throw new Error('Refusing to boot mainnet with the current devnet test mint.');
 }
 
 if (
   solanaNetwork === 'mainnet-beta' &&
-  wannabetProgramId.toBase58() === 'H1fMNM3LC2Ljy6auyBVzeTvE2aeG4CTDRhpm6crn5bVW'
+  wannabetProgramId.toBase58() === currentDevnetProgramId
 ) {
   throw new Error('Refusing to boot mainnet with the current devnet program ID.');
 }
