@@ -27,6 +27,12 @@ type RealBet = {
   creatorSide: number;
   accepterSide: number;
   winnerSide: number;
+  marketKind: string;
+  priceSymbol: string;
+  priceVenue: string;
+  settlementMinuteTs: number;
+  comparator: string;
+  strikeE8: number;
   betId: string;
 };
 
@@ -36,9 +42,9 @@ function getUserDisplay(value: string) {
   return value.slice(0, 5);
 }
 
-function formatRemaining(expiryTs: number) {
+function formatRemaining(targetTs: number) {
   const now = Math.floor(Date.now() / 1000);
-  const diff = expiryTs - now;
+  const diff = targetTs - now;
 
   if (diff <= 0) return 'Expired';
 
@@ -61,6 +67,63 @@ function getStateLabel(state: Record<string, unknown> | null | undefined) {
   if ('cancelled' in state) return 'CANCELLED';
   if ('resolved' in state) return 'RESOLVED';
   return 'UNKNOWN';
+}
+
+function readEnumVariantKey(value: Record<string, unknown> | null | undefined) {
+  if (!value || typeof value !== 'object') return 'unknown';
+  const [key] = Object.keys(value);
+  return key ?? 'unknown';
+}
+
+function getMarketKindLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'custom') return 'CUSTOM';
+  if (key === 'cryptoPriceBinary') return 'CRYPTO_PRICE_BINARY';
+
+  return 'UNKNOWN';
+}
+
+function getPriceSymbolLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'btcUsdt') return 'BTC/USDT';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
+function getPriceVenueLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'binanceSpot') return 'BINANCE_SPOT';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
+function getComparatorLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'greaterThanOrEqual') return 'ABOVE_OR_EQUAL';
+  if (key === 'lessThan') return 'BELOW';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
+function formatUtcTimestamp(ts: number) {
+  if (ts <= 0) return 'Not set';
+  return new Date(ts * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC');
+}
+
+function formatPriceFromE8(value: number) {
+  if (value <= 0) return 'Not set';
+
+  return (value / 100_000_000).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  });
 }
 
 function formatStakeRatio(left: number, right: number) {
@@ -158,12 +221,9 @@ export default function HomePage() {
           try {
             const account = (
               program.coder.accounts as unknown as {
-                decode: (
-                  accountName: string,
-                  data: Buffer
-                ) => Record<string, unknown>;
+                decode: (accountName: string, data: Buffer) => Record<string, unknown>;
               }
-            ).decode('bet', item.account.data) as Record<string, unknown> & {
+            ).decode('bet', item.account.data as Buffer) as Record<string, unknown> & {
               creator?: { toBase58?: () => string; toString?: () => string } | null;
               accepter?: { toBase58?: () => string; toString?: () => string } | null;
               mint?: { toBase58?: () => string; toString?: () => string } | null;
@@ -175,6 +235,12 @@ export default function HomePage() {
               creatorSide?: number | null;
               accepterSide?: number | null;
               winnerSide?: number | null;
+              marketKind?: Record<string, unknown> | null;
+              priceSymbol?: Record<string, unknown> | null;
+              priceVenue?: Record<string, unknown> | null;
+              settlementMinuteTs?: { toNumber?: () => number; toString?: () => string } | null;
+              comparator?: Record<string, unknown> | null;
+              strikeE8?: { toNumber?: () => number; toString?: () => string } | null;
               betId?: { toString?: () => string } | null;
             };
 
@@ -185,6 +251,8 @@ export default function HomePage() {
             );
             const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
             const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
+            const settlementMinuteTs = readAnchorNumberLike(account.settlementMinuteTs, 0);
+            const strikeE8 = readAnchorNumberLike(account.strikeE8, 0);
 
             return [
               {
@@ -200,6 +268,12 @@ export default function HomePage() {
                 creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
                 accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
                 winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
+                marketKind: getMarketKindLabel(account.marketKind),
+                priceSymbol: getPriceSymbolLabel(account.priceSymbol),
+                priceVenue: getPriceVenueLabel(account.priceVenue),
+                settlementMinuteTs,
+                comparator: getComparatorLabel(account.comparator),
+                strikeE8,
                 betId:
                   account.betId && typeof account.betId.toString === 'function'
                     ? account.betId.toString()
@@ -479,6 +553,40 @@ export default function HomePage() {
                 ? 'Open'
                 : getUserDisplay(bet.accepter);
 
+            const isBtcThresholdBet =
+              bet.marketKind === 'CRYPTO_PRICE_BINARY' &&
+              bet.priceSymbol === 'BTC/USDT' &&
+              bet.priceVenue === 'BINANCE_SPOT';
+
+            const cardTitle = isBtcThresholdBet
+              ? 'BTC/USDT threshold bet'
+              : bet.marketKind === 'CUSTOM'
+                ? 'Custom escrow bet'
+                : 'On-chain bet';
+
+            const cardSubtitle = isBtcThresholdBet
+              ? 'Binance Spot'
+              : bet.marketKind === 'CUSTOM'
+                ? 'Custom market'
+                : 'Market metadata unavailable';
+
+            const directionLabel =
+              bet.comparator === 'ABOVE_OR_EQUAL'
+                ? 'Above or equal'
+                : bet.comparator === 'BELOW'
+                  ? 'Below'
+                  : 'Unknown';
+
+            const strikeLabel = formatPriceFromE8(bet.strikeE8);
+            const settlementLabel = formatUtcTimestamp(bet.settlementMinuteTs);
+
+            const timeTargetTs =
+              isBtcThresholdBet && bet.settlementMinuteTs > 0
+                ? bet.settlementMinuteTs
+                : bet.expiryTs;
+
+            const timeLabel = isBtcThresholdBet ? 'SETTLES IN' : 'TIME REMAINING';
+
             return (
               <article
                 key={bet.pubkey}
@@ -506,7 +614,9 @@ export default function HomePage() {
                 </div>
 
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(totalPot)}</p>
-                <p className="mt-2 text-sm text-white/80">Devnet escrow bet</p>
+                <p className="mt-2 text-sm font-semibold text-white/85">{cardTitle}</p>
+                <p className="mt-1 text-xs text-white/60">{cardSubtitle}</p>
+
                 <Link
                   href={`/bets/${bet.pubkey}`}
                   className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.08em] text-neon transition hover:text-white"
@@ -523,6 +633,24 @@ export default function HomePage() {
 
                     <p className="text-white/50">Creator stake</p>
                     <p className="font-semibold text-white/85">{formatUSDC(bet.creatorAmountUi)}</p>
+
+                    <p className="text-white/50">Market</p>
+                    <p className="font-semibold text-white/85">
+                      {isBtcThresholdBet ? 'BTC/USDT threshold' : 'Custom escrow'}
+                    </p>
+
+                    {isBtcThresholdBet ? (
+                      <>
+                        <p className="text-white/50">Direction</p>
+                        <p className="font-semibold text-white/85">{directionLabel}</p>
+
+                        <p className="text-white/50">Strike</p>
+                        <p className="font-semibold text-white/85">{strikeLabel}</p>
+
+                        <p className="text-white/50">Settlement</p>
+                        <p className="font-semibold text-white/85">{settlementLabel}</p>
+                      </>
+                    ) : null}
 
                     {bet.state === 'OPEN' ? (
                       <>
@@ -550,8 +678,8 @@ export default function HomePage() {
 
                 <div className="mt-4 border-t border-white/10 pt-4">
                   <div className="flex items-center justify-between text-xs text-white/55">
-                    <span>TIME REMAINING</span>
-                    <span className="text-sm text-white/80">{formatRemaining(bet.expiryTs)}</span>
+                    <span>{timeLabel}</span>
+                    <span className="text-sm text-white/80">{formatRemaining(timeTargetTs)}</span>
                   </div>
                 </div>
 
