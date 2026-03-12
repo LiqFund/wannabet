@@ -517,6 +517,514 @@
       "args": []
     },
     {
+      "name": "claim_void_refund",
+      "discriminator": [
+        216,
+        90,
+        25,
+        165,
+        100,
+        32,
+        61,
+        189
+      ],
+      "accounts": [
+        {
+          "name": "claimant",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "claimant_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "claimant"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "escrow_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "escrow_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "claim_winnings",
+      "discriminator": [
+        161,
+        215,
+        24,
+        59,
+        14,
+        236,
+        242,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "claimant",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet",
+          "writable": true
+        },
+        {
+          "name": "mint"
+        },
+        {
+          "name": "claimant_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "claimant"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "fee_vault",
+          "writable": true
+        },
+        {
+          "name": "escrow_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  115,
+                  99,
+                  114,
+                  111,
+                  119
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "escrow_ata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "escrow_authority"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_bet",
       "discriminator": [
         197,
@@ -912,222 +1420,6 @@
         {
           "name": "bet",
           "writable": true
-        },
-        {
-          "name": "mint"
-        },
-        {
-          "name": "winner"
-        },
-        {
-          "name": "winner_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "winner"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "fee_vault",
-          "writable": true
-        },
-        {
-          "name": "escrow_authority",
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  101,
-                  115,
-                  99,
-                  114,
-                  111,
-                  119
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "bet"
-              }
-            ]
-          }
-        },
-        {
-          "name": "escrow_ata",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "escrow_authority"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6,
-                  221,
-                  246,
-                  225,
-                  215,
-                  101,
-                  161,
-                  147,
-                  217,
-                  203,
-                  225,
-                  70,
-                  206,
-                  235,
-                  121,
-                  172,
-                  28,
-                  180,
-                  133,
-                  237,
-                  95,
-                  91,
-                  55,
-                  145,
-                  58,
-                  140,
-                  245,
-                  133,
-                  126,
-                  255,
-                  0,
-                  169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140,
-                151,
-                37,
-                143,
-                78,
-                36,
-                137,
-                241,
-                187,
-                61,
-                16,
-                41,
-                20,
-                142,
-                13,
-                131,
-                11,
-                90,
-                19,
-                153,
-                218,
-                255,
-                16,
-                132,
-                4,
-                142,
-                123,
-                216,
-                219,
-                233,
-                248,
-                89
-              ]
-            }
-          }
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": [
@@ -1355,6 +1647,26 @@
     },
     {
       "code": 6018,
+      "name": "PayoutAlreadyClaimed",
+      "msg": "Payout already claimed"
+    },
+    {
+      "code": 6019,
+      "name": "BetNotVoided",
+      "msg": "Bet is not voided"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidRefundClaimant",
+      "msg": "Invalid refund claimant"
+    },
+    {
+      "code": 6021,
+      "name": "RefundAlreadyClaimed",
+      "msg": "Refund already claimed"
+    },
+    {
+      "code": 6022,
       "name": "InvalidFeeVault",
       "msg": "Invalid fee vault"
     }
@@ -1414,6 +1726,78 @@
             "type": "u8"
           },
           {
+            "name": "bet_version",
+            "type": "u8"
+          },
+          {
+            "name": "market_kind",
+            "type": {
+              "defined": {
+                "name": "MarketKind"
+              }
+            }
+          },
+          {
+            "name": "price_symbol",
+            "type": {
+              "defined": {
+                "name": "PriceSymbol"
+              }
+            }
+          },
+          {
+            "name": "price_venue",
+            "type": {
+              "defined": {
+                "name": "PriceVenue"
+              }
+            }
+          },
+          {
+            "name": "settlement_minute_ts",
+            "type": "i64"
+          },
+          {
+            "name": "comparator",
+            "type": {
+              "defined": {
+                "name": "Comparator"
+              }
+            }
+          },
+          {
+            "name": "strike_e8",
+            "type": "u64"
+          },
+          {
+            "name": "resolved_price_e8",
+            "type": "u64"
+          },
+          {
+            "name": "resolved_at_ts",
+            "type": "i64"
+          },
+          {
+            "name": "resolution_status",
+            "type": {
+              "defined": {
+                "name": "ResolutionStatus"
+              }
+            }
+          },
+          {
+            "name": "payout_claimed",
+            "type": "bool"
+          },
+          {
+            "name": "creator_refund_claimed",
+            "type": "bool"
+          },
+          {
+            "name": "accepter_refund_claimed",
+            "type": "bool"
+          },
+          {
             "name": "bet_id",
             "type": "u64"
           },
@@ -1445,6 +1829,23 @@
       }
     },
     {
+      "name": "Comparator",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "GreaterThanOrEqual"
+          },
+          {
+            "name": "LessThan"
+          }
+        ]
+      }
+    },
+    {
       "name": "Config",
       "type": {
         "kind": "struct",
@@ -1464,6 +1865,65 @@
           {
             "name": "fee_vault",
             "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MarketKind",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Custom"
+          },
+          {
+            "name": "CryptoPriceBinary"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceSymbol",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "BtcUsdt"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PriceVenue",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "BinanceSpot"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ResolutionStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Resolved"
+          },
+          {
+            "name": "Voided"
           }
         ]
       }

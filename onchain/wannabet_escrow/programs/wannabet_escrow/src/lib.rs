@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 
-declare_id!("Dp2U48v9tF2PwUVeg92tGSwxgC2r85XddpB7Ts5BBcPH");
+declare_id!("36r1hGZPxnwoJRuDQ7Qqf5ndx2FHLRKcQ3iFivkoxZ2L");
 
 const CONFIG_SEED: &[u8] = b"config";
 const BET_SEED: &[u8] = b"bet";
@@ -47,6 +47,96 @@ fn validate_odds_ratio(creator_amount: u64, accepter_amount_required: u64) -> Re
     Ok(())
 }
 
+#[inline(always)]
+fn validate_settlement_minute_ts(settlement_minute_ts: i64, now: i64) -> Result<()> {
+    require!(
+        settlement_minute_ts > now + min_expiry_seconds(),
+        ErrorCode::InvalidSettlementMinute
+    );
+    require!(
+        settlement_minute_ts % 60 == 0,
+        ErrorCode::InvalidSettlementMinute
+    );
+    Ok(())
+}
+
+#[inline(always)]
+fn validate_supported_crypto_price_bet(bet: &Bet) -> Result<()> {
+    require!(
+        bet.market_kind == MarketKind::CryptoPriceBinary,
+        ErrorCode::UnsupportedPriceMarket
+    );
+    require!(
+        bet.price_symbol == PriceSymbol::BtcUsdt,
+        ErrorCode::UnsupportedPriceMarket
+    );
+    require!(
+        bet.price_venue == PriceVenue::BinanceSpot,
+        ErrorCode::UnsupportedPriceMarket
+    );
+    require!(bet.comparator != Comparator::Unknown, ErrorCode::InvalidComparator);
+    require!(bet.strike_e8 > 0, ErrorCode::InvalidStrike);
+    Ok(())
+}
+
+#[inline(always)]
+fn compute_crypto_price_winner_side(bet: &Bet, resolved_price_e8: u64) -> Result<u8> {
+    validate_supported_crypto_price_bet(bet)?;
+    require!(resolved_price_e8 > 0, ErrorCode::InvalidResolvedPrice);
+
+    let creator_wins = match bet.comparator {
+        Comparator::GreaterThanOrEqual => resolved_price_e8 >= bet.strike_e8,
+        Comparator::LessThan => resolved_price_e8 < bet.strike_e8,
+        Comparator::Unknown => return err!(ErrorCode::InvalidComparator),
+    };
+
+    Ok(if creator_wins {
+        bet.creator_side
+    } else {
+        bet.accepter_side
+    })
+}
+
+#[inline(always)]
+fn initialize_new_bet(
+    bet: &mut Bet,
+    creator: Pubkey,
+    mint: Pubkey,
+    creator_amount: u64,
+    accepter_amount_required: u64,
+    expiry_ts: i64,
+    creator_side: u8,
+    bet_id: u64,
+    bump: u8,
+) {
+    bet.creator = creator;
+    bet.accepter = Pubkey::default();
+    bet.mint = mint;
+    bet.creator_amount = creator_amount;
+    bet.accepter_amount_required = accepter_amount_required;
+    bet.accepter_amount = 0;
+    bet.expiry_ts = expiry_ts;
+    bet.state = BetState::Open;
+    bet.creator_side = creator_side;
+    bet.accepter_side = 0;
+    bet.winner_side = 0;
+    bet.bet_version = 1;
+    bet.market_kind = MarketKind::Custom;
+    bet.price_symbol = PriceSymbol::Unknown;
+    bet.price_venue = PriceVenue::Unknown;
+    bet.settlement_minute_ts = 0;
+    bet.comparator = Comparator::Unknown;
+    bet.strike_e8 = 0;
+    bet.resolved_price_e8 = 0;
+    bet.resolved_at_ts = 0;
+    bet.resolution_status = ResolutionStatus::Pending;
+    bet.payout_claimed = false;
+    bet.creator_refund_claimed = false;
+    bet.accepter_refund_claimed = false;
+    bet.bet_id = bet_id;
+    bet.bump = bump;
+}
+
 #[program]
 pub mod wannabet_escrow {
     use super::*;
@@ -79,6 +169,12 @@ pub mod wannabet_escrow {
         Ok(())
     }
 
+    pub fn set_fee_vault(ctx: Context<SetFeeVault>) -> Result<()> {
+        let config = &mut ctx.accounts.config;
+        config.fee_vault = ctx.accounts.fee_vault.key();
+        Ok(())
+    }
+
     pub fn create_bet(
         ctx: Context<CreateBet>,
         bet_id: u64,
@@ -92,22 +188,67 @@ pub mod wannabet_escrow {
         validate_odds_ratio(creator_amount, accepter_amount_required)?;
 
         let now = Clock::get()?.unix_timestamp;
-        require!(expiry_ts > now + min_expiry_seconds(), ErrorCode::InvalidExpiry);
+        require!(
+            expiry_ts > now + min_expiry_seconds(),
+            ErrorCode::InvalidExpiry
+        );
 
         let bet = &mut ctx.accounts.bet;
-        bet.creator = ctx.accounts.creator.key();
-        bet.accepter = Pubkey::default();
-        bet.mint = ctx.accounts.mint.key();
-        bet.creator_amount = creator_amount;
-        bet.accepter_amount_required = accepter_amount_required;
-        bet.accepter_amount = 0;
-        bet.expiry_ts = expiry_ts;
-        bet.state = BetState::Open;
-        bet.creator_side = creator_side;
-        bet.accepter_side = 0;
-        bet.winner_side = 0;
-        bet.bet_id = bet_id;
-        bet.bump = ctx.bumps.bet;
+        initialize_new_bet(
+            bet,
+            ctx.accounts.creator.key(),
+            ctx.accounts.mint.key(),
+            creator_amount,
+            accepter_amount_required,
+            expiry_ts,
+            creator_side,
+            bet_id,
+            ctx.bumps.bet,
+        );
+
+        token::transfer(ctx.accounts.transfer_to_escrow_ctx(), creator_amount)?;
+        Ok(())
+    }
+
+    pub fn create_crypto_price_bet(
+        ctx: Context<CreateBet>,
+        bet_id: u64,
+        creator_side: u8,
+        creator_amount: u64,
+        accepter_amount_required: u64,
+        settlement_minute_ts: i64,
+        comparator: Comparator,
+        strike_e8: u64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+        require!(creator_side <= 1, ErrorCode::InvalidSide);
+        validate_odds_ratio(creator_amount, accepter_amount_required)?;
+
+        let now = Clock::get()?.unix_timestamp;
+        validate_settlement_minute_ts(settlement_minute_ts, now)?;
+        require!(comparator != Comparator::Unknown, ErrorCode::InvalidComparator);
+        require!(strike_e8 > 0, ErrorCode::InvalidStrike);
+
+        let bet = &mut ctx.accounts.bet;
+        initialize_new_bet(
+            bet,
+            ctx.accounts.creator.key(),
+            ctx.accounts.mint.key(),
+            creator_amount,
+            accepter_amount_required,
+            settlement_minute_ts,
+            creator_side,
+            bet_id,
+            ctx.bumps.bet,
+        );
+
+        bet.bet_version = 2;
+        bet.market_kind = MarketKind::CryptoPriceBinary;
+        bet.price_symbol = PriceSymbol::BtcUsdt;
+        bet.price_venue = PriceVenue::BinanceSpot;
+        bet.settlement_minute_ts = settlement_minute_ts;
+        bet.comparator = comparator;
+        bet.strike_e8 = strike_e8;
 
         token::transfer(ctx.accounts.transfer_to_escrow_ctx(), creator_amount)?;
         Ok(())
@@ -128,7 +269,10 @@ pub mod wannabet_escrow {
             ctx.accounts.accepter.key() != bet.creator,
             ErrorCode::CreatorCannotAccept
         );
-        require!(bet.accepter == Pubkey::default(), ErrorCode::AlreadyAccepted);
+        require!(
+            bet.accepter == Pubkey::default(),
+            ErrorCode::AlreadyAccepted
+        );
 
         bet.accepter = ctx.accounts.accepter.key();
         bet.accepter_amount = amount;
@@ -153,11 +297,8 @@ pub mod wannabet_escrow {
             bet.state = BetState::Cancelled;
         }
 
-        let signer_seeds: &[&[u8]] = &[
-            ESCROW_SEED,
-            bet_key.as_ref(),
-            &[ctx.bumps.escrow_authority],
-        ];
+        let signer_seeds: &[&[u8]] =
+            &[ESCROW_SEED, bet_key.as_ref(), &[ctx.bumps.escrow_authority]];
 
         token::transfer(
             ctx.accounts
@@ -176,8 +317,99 @@ pub mod wannabet_escrow {
         let now = Clock::get()?.unix_timestamp;
         let bet = &mut ctx.accounts.bet;
 
+        require!(
+            bet.market_kind == MarketKind::Custom,
+            ErrorCode::ManualResolveDisabledForPriceMarket
+        );
         require!(bet.state == BetState::Locked, ErrorCode::InvalidBetState);
         require!(now >= bet.expiry_ts, ErrorCode::BetNotExpired);
+        require!(
+            bet.accepter != Pubkey::default(),
+            ErrorCode::WinnerUnavailable
+        );
+
+        bet.winner_side = winner_side;
+        bet.state = BetState::Resolved;
+        bet.resolved_price_e8 = 0;
+        bet.resolved_at_ts = now;
+        bet.resolution_status = ResolutionStatus::Resolved;
+        bet.payout_claimed = false;
+
+        Ok(())
+    }
+
+    pub fn resolve_crypto_price_bet(
+        ctx: Context<ResolveBet>,
+        resolved_price_e8: u64,
+    ) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+
+        let now = Clock::get()?.unix_timestamp;
+        let bet = &mut ctx.accounts.bet;
+
+        require!(bet.state == BetState::Locked, ErrorCode::InvalidBetState);
+        require!(now >= bet.expiry_ts, ErrorCode::BetNotExpired);
+        require!(
+            bet.accepter != Pubkey::default(),
+            ErrorCode::WinnerUnavailable
+        );
+
+        let winner_side = compute_crypto_price_winner_side(&*bet, resolved_price_e8)?;
+
+        bet.winner_side = winner_side;
+        bet.state = BetState::Resolved;
+        bet.resolved_price_e8 = resolved_price_e8;
+        bet.resolved_at_ts = now;
+        bet.resolution_status = ResolutionStatus::Resolved;
+        bet.payout_claimed = false;
+
+        Ok(())
+    }
+
+    pub fn void_bet(ctx: Context<ResolveBet>) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+
+        let now = Clock::get()?.unix_timestamp;
+        let bet = &mut ctx.accounts.bet;
+
+        require!(bet.state == BetState::Locked, ErrorCode::InvalidBetState);
+        require!(now >= bet.expiry_ts, ErrorCode::BetNotExpired);
+
+        bet.winner_side = 0;
+        bet.state = BetState::Resolved;
+        bet.resolved_at_ts = now;
+        bet.resolution_status = ResolutionStatus::Voided;
+        bet.payout_claimed = false;
+        bet.creator_refund_claimed = false;
+        bet.accepter_refund_claimed = false;
+
+        Ok(())
+    }
+
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+
+        let bet = &mut ctx.accounts.bet;
+
+        require!(bet.state == BetState::Resolved, ErrorCode::InvalidBetState);
+        require!(
+            bet.resolution_status == ResolutionStatus::Resolved,
+            ErrorCode::InvalidBetState
+        );
+        require!(!bet.payout_claimed, ErrorCode::PayoutAlreadyClaimed);
+
+        let winner = if bet.winner_side == bet.creator_side {
+            bet.creator
+        } else {
+            bet.accepter
+        };
+
+        require!(winner != Pubkey::default(), ErrorCode::WinnerUnavailable);
+        require_keys_eq!(
+            winner,
+            ctx.accounts.claimant.key(),
+            ErrorCode::InvalidWinnerAccount
+        );
 
         let total = bet
             .creator_amount
@@ -192,30 +424,16 @@ pub mod wannabet_escrow {
 
         let payout = total.checked_sub(fee).ok_or(ErrorCode::MathOverflow)?;
 
-        let winner = if winner_side == bet.creator_side {
-            bet.creator
-        } else {
-            bet.accepter
-        };
-        require!(winner != Pubkey::default(), ErrorCode::WinnerUnavailable);
-        require_keys_eq!(winner, ctx.accounts.winner.key(), ErrorCode::InvalidWinnerAccount);
-
-        bet.winner_side = winner_side;
-        bet.state = BetState::Resolved;
+        bet.payout_claimed = true;
 
         let bet_key = ctx.accounts.bet.key();
 
-        let signer_seeds: &[&[u8]] = &[
-            ESCROW_SEED,
-            bet_key.as_ref(),
-            &[ctx.bumps.escrow_authority],
-        ];
+        let signer_seeds: &[&[u8]] =
+            &[ESCROW_SEED, bet_key.as_ref(), &[ctx.bumps.escrow_authority]];
 
         if fee > 0 {
             token::transfer(
-                ctx.accounts
-                    .transfer_fee_ctx()
-                    .with_signer(&[signer_seeds]),
+                ctx.accounts.transfer_fee_ctx().with_signer(&[signer_seeds]),
                 fee,
             )?;
         }
@@ -225,6 +443,53 @@ pub mod wannabet_escrow {
                 .transfer_payout_ctx()
                 .with_signer(&[signer_seeds]),
             payout,
+        )?;
+
+        Ok(())
+    }
+
+    pub fn claim_void_refund(ctx: Context<ClaimVoidRefund>) -> Result<()> {
+        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
+
+        let bet = &mut ctx.accounts.bet;
+
+        require!(bet.state == BetState::Resolved, ErrorCode::InvalidBetState);
+        require!(
+            bet.resolution_status == ResolutionStatus::Voided,
+            ErrorCode::BetNotVoided
+        );
+
+        let claimant_key = ctx.accounts.claimant.key();
+
+        let refund_amount = if claimant_key == bet.creator {
+            require!(!bet.creator_refund_claimed, ErrorCode::RefundAlreadyClaimed);
+            bet.creator_refund_claimed = true;
+            bet.creator_amount
+        } else if claimant_key == bet.accepter {
+            require!(
+                bet.accepter != Pubkey::default(),
+                ErrorCode::InvalidRefundClaimant
+            );
+            require!(
+                !bet.accepter_refund_claimed,
+                ErrorCode::RefundAlreadyClaimed
+            );
+            bet.accepter_refund_claimed = true;
+            bet.accepter_amount
+        } else {
+            return err!(ErrorCode::InvalidRefundClaimant);
+        };
+
+        let bet_key = ctx.accounts.bet.key();
+
+        let signer_seeds: &[&[u8]] =
+            &[ESCROW_SEED, bet_key.as_ref(), &[ctx.bumps.escrow_authority]];
+
+        token::transfer(
+            ctx.accounts
+                .transfer_refund_ctx()
+                .with_signer(&[signer_seeds]),
+            refund_amount,
         )?;
 
         Ok(())
@@ -257,6 +522,20 @@ pub struct AdminOnly<'info> {
         has_one = admin @ ErrorCode::UnauthorizedAdmin,
     )]
     pub config: Account<'info, Config>,
+}
+
+#[derive(Accounts)]
+pub struct SetFeeVault<'info> {
+    #[account(mut)]
+    pub admin: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [CONFIG_SEED],
+        bump,
+        has_one = admin @ ErrorCode::UnauthorizedAdmin,
+    )]
+    pub config: Account<'info, Config>,
+    pub fee_vault: Account<'info, TokenAccount>,
 }
 
 #[derive(Accounts)]
@@ -399,17 +678,25 @@ pub struct ResolveBet<'info> {
         has_one = admin @ ErrorCode::UnauthorizedAdmin,
     )]
     pub config: Account<'info, Config>,
+    #[account(mut)]
+    pub bet: Account<'info, Bet>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimWinnings<'info> {
+    #[account(mut)]
+    pub claimant: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump)]
+    pub config: Account<'info, Config>,
     #[account(mut, constraint = bet.mint == mint.key() @ ErrorCode::InvalidMint)]
     pub bet: Account<'info, Bet>,
     pub mint: Account<'info, Mint>,
-    /// CHECK: winner pubkey is checked in handler logic.
-    pub winner: UncheckedAccount<'info>,
     #[account(
         mut,
         associated_token::mint = mint,
-        associated_token::authority = winner,
+        associated_token::authority = claimant,
     )]
-    pub winner_ata: Account<'info, TokenAccount>,
+    pub claimant_ata: Account<'info, TokenAccount>,
     #[account(
         mut,
         address = config.fee_vault @ ErrorCode::InvalidFeeVault,
@@ -428,7 +715,7 @@ pub struct ResolveBet<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-impl<'info> ResolveBet<'info> {
+impl<'info> ClaimWinnings<'info> {
     fn transfer_fee_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
         CpiContext::new(
             self.token_program.to_account_info(),
@@ -445,7 +732,47 @@ impl<'info> ResolveBet<'info> {
             self.token_program.to_account_info(),
             Transfer {
                 from: self.escrow_ata.to_account_info(),
-                to: self.winner_ata.to_account_info(),
+                to: self.claimant_ata.to_account_info(),
+                authority: self.escrow_authority.to_account_info(),
+            },
+        )
+    }
+}
+
+#[derive(Accounts)]
+pub struct ClaimVoidRefund<'info> {
+    #[account(mut)]
+    pub claimant: Signer<'info>,
+    #[account(seeds = [CONFIG_SEED], bump)]
+    pub config: Account<'info, Config>,
+    #[account(mut, constraint = bet.mint == mint.key() @ ErrorCode::InvalidMint)]
+    pub bet: Account<'info, Bet>,
+    pub mint: Account<'info, Mint>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = claimant,
+    )]
+    pub claimant_ata: Account<'info, TokenAccount>,
+    /// CHECK: PDA authority only for signing escrow token transfers.
+    #[account(seeds = [ESCROW_SEED, bet.key().as_ref()], bump)]
+    pub escrow_authority: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = escrow_authority,
+    )]
+    pub escrow_ata: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+}
+
+impl<'info> ClaimVoidRefund<'info> {
+    fn transfer_refund_ctx(&self) -> CpiContext<'_, '_, '_, 'info, Transfer<'info>> {
+        CpiContext::new(
+            self.token_program.to_account_info(),
+            Transfer {
+                from: self.escrow_ata.to_account_info(),
+                to: self.claimant_ata.to_account_info(),
                 authority: self.escrow_authority.to_account_info(),
             },
         )
@@ -459,6 +786,38 @@ pub struct Config {
     pub fee_bps: u16,
     pub paused: bool,
     pub fee_vault: Pubkey,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum MarketKind {
+    Custom,
+    CryptoPriceBinary,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum PriceSymbol {
+    Unknown,
+    BtcUsdt,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum PriceVenue {
+    Unknown,
+    BinanceSpot,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum Comparator {
+    Unknown,
+    GreaterThanOrEqual,
+    LessThan,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
+pub enum ResolutionStatus {
+    Pending,
+    Resolved,
+    Voided,
 }
 
 #[account]
@@ -475,6 +834,19 @@ pub struct Bet {
     pub creator_side: u8,
     pub accepter_side: u8,
     pub winner_side: u8,
+    pub bet_version: u8,
+    pub market_kind: MarketKind,
+    pub price_symbol: PriceSymbol,
+    pub price_venue: PriceVenue,
+    pub settlement_minute_ts: i64,
+    pub comparator: Comparator,
+    pub strike_e8: u64,
+    pub resolved_price_e8: u64,
+    pub resolved_at_ts: i64,
+    pub resolution_status: ResolutionStatus,
+    pub payout_claimed: bool,
+    pub creator_refund_claimed: bool,
+    pub accepter_refund_claimed: bool,
     pub bet_id: u64,
     pub bump: u8,
 }
@@ -501,6 +873,12 @@ pub enum ErrorCode {
     InvalidAmount,
     #[msg("Invalid expiry")]
     InvalidExpiry,
+    #[msg("Invalid settlement minute")]
+    InvalidSettlementMinute,
+    #[msg("Invalid comparator")]
+    InvalidComparator,
+    #[msg("Invalid strike")]
+    InvalidStrike,
     #[msg("Invalid bet state for this operation")]
     InvalidBetState,
     #[msg("Bet already expired")]
@@ -525,6 +903,20 @@ pub enum ErrorCode {
     InvalidWinnerAccount,
     #[msg("Winner not available")]
     WinnerUnavailable,
+    #[msg("Payout already claimed")]
+    PayoutAlreadyClaimed,
+    #[msg("Bet is not voided")]
+    BetNotVoided,
+    #[msg("Invalid refund claimant")]
+    InvalidRefundClaimant,
+    #[msg("Refund already claimed")]
+    RefundAlreadyClaimed,
     #[msg("Invalid fee vault")]
     InvalidFeeVault,
+    #[msg("Resolved price is invalid")]
+    InvalidResolvedPrice,
+    #[msg("This price market is not supported by the resolver")]
+    UnsupportedPriceMarket,
+    #[msg("Manual resolution is disabled for crypto price markets")]
+    ManualResolveDisabledForPriceMarket,
 }
