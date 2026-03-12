@@ -7,8 +7,13 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import idl from '@/lib/idl/wannabet_escrow.json';
+import { getWannaBetProgram } from '@/lib/anchor';
 import { formatUSDC, shortAddress } from '@/lib/format';
-import { SOLANA_RPC_URL, WANNABET_DEVNET_TEST_MINT, WANNABET_ESCROW_PROGRAM_ID } from '@/lib/solana';
+import {
+  SOLANA_RPC_URL,
+  WANNABET_DEVNET_TEST_MINT,
+  WANNABET_ESCROW_PROGRAM_ID,
+} from '@/lib/solana';
 
 type RealBet = {
   pubkey: string;
@@ -22,9 +27,35 @@ type RealBet = {
   state: string;
   creatorSide: number;
   accepterSide: number;
-  winnerSide: number;
+  winnerSide: number | null;
+  resolutionStatus: string;
+  payoutClaimed: boolean;
   betId: string;
 };
+
+type AnchorNumberLike =
+  | { toNumber?: () => number; toString?: () => string }
+  | number
+  | bigint
+  | null
+  | undefined;
+
+type AnchorPubkeyLike =
+  | { toBase58?: () => string; toString?: () => string }
+  | string
+  | null
+  | undefined;
+
+type ConfigAccountShape = {
+  feeVault: PublicKey | { toBase58: () => string } | string;
+};
+
+const BET_ACCOUNT_DISCRIMINATOR_BASE58 = anchor.utils.bytes.bs58.encode(
+  Uint8Array.from([147, 23, 35, 59, 15, 75, 155, 32])
+);
+
+const BET_CREATOR_OFFSET = 8;
+const BET_ACCEPTER_OFFSET = 40;
 
 function getStateLabel(state: Record<string, unknown> | null | undefined) {
   if (!state || typeof state !== 'object') return 'UNKNOWN';
@@ -32,6 +63,14 @@ function getStateLabel(state: Record<string, unknown> | null | undefined) {
   if ('locked' in state) return 'LOCKED';
   if ('cancelled' in state) return 'CANCELLED';
   if ('resolved' in state) return 'RESOLVED';
+  return 'UNKNOWN';
+}
+
+function getResolutionStatusLabel(status: Record<string, unknown> | null | undefined) {
+  if (!status || typeof status !== 'object') return 'UNKNOWN';
+  if ('pending' in status) return 'PENDING';
+  if ('resolved' in status) return 'RESOLVED';
+  if ('voided' in status) return 'VOIDED';
   return 'UNKNOWN';
 }
 
@@ -67,11 +106,16 @@ function formatStakeRatio(left: number, right: number) {
   return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
 }
 
-function readAnchorNumberLike(
-  value: { toNumber?: () => number; toString?: () => string } | null | undefined,
-  fallback = 0
-) {
-  if (!value) return fallback;
+function readAnchorNumberLike(value: AnchorNumberLike, fallback = 0) {
+  if (value === null || value === undefined) return fallback;
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  if (typeof value === 'bigint') {
+    return Number(value);
+  }
 
   if (typeof value.toNumber === 'function') {
     return value.toNumber();
@@ -86,10 +130,14 @@ function readAnchorNumberLike(
 }
 
 function readAnchorPubkeyLike(
-  value: { toBase58?: () => string; toString?: () => string } | null | undefined,
+  value: AnchorPubkeyLike,
   fallback = PublicKey.default.toBase58()
 ) {
   if (!value) return fallback;
+
+  if (typeof value === 'string') {
+    return value || fallback;
+  }
 
   if (typeof value.toBase58 === 'function') {
     return value.toBase58();
@@ -124,6 +172,109 @@ function getFriendlyCancelErrorMessage(error: unknown) {
   return 'Failed to cancel bet. Please try again.';
 }
 
+function getFriendlyClaimErrorMessage(error: unknown) {
+  const raw =
+    error instanceof Error
+      ? `${error.name} ${error.message}`
+      : typeof error === 'string'
+        ? error
+        : JSON.stringify(error);
+
+  const normalized = raw.toLowerCase();
+
+  if (normalized.includes('user rejected') || normalized.includes('rejected the request')) {
+    return 'Transaction was cancelled in your wallet.';
+  }
+
+  if (normalized.includes('wallet')) {
+    return 'Wallet error. Reconnect your wallet and try again.';
+  }
+
+  return 'Failed to claim winnings. Please try again.';
+}
+
+function getDummyProgram(connection: Connection) {
+  const dummyWallet = {
+    publicKey: Keypair.generate().publicKey,
+    signTransaction: async <T,>(tx: T) => tx,
+    signAllTransactions: async <T,>(txs: T[]) => txs,
+  };
+
+  const provider = new anchor.AnchorProvider(connection, dummyWallet as never, {
+    commitment: 'confirmed',
+  });
+
+  return new anchor.Program(
+    {
+      ...(idl as anchor.Idl),
+      address: WANNABET_ESCROW_PROGRAM_ID.toBase58(),
+    } as anchor.Idl,
+    provider
+  );
+}
+
+function mapFetchedBet(
+  pubkey: PublicKey,
+  account: Record<string, unknown>
+): RealBet | null {
+  const typedAccount = account as Record<string, unknown> & {
+    creator?: AnchorPubkeyLike;
+    accepter?: AnchorPubkeyLike;
+    mint?: AnchorPubkeyLike;
+    creatorAmount?: AnchorNumberLike;
+    accepterAmountRequired?: AnchorNumberLike;
+    accepterAmount?: AnchorNumberLike;
+    expiryTs?: AnchorNumberLike;
+    state?: Record<string, unknown> | null;
+    resolutionStatus?: Record<string, unknown> | null;
+    creatorSide?: AnchorNumberLike;
+    accepterSide?: AnchorNumberLike;
+    winnerSide?: AnchorNumberLike;
+    payoutClaimed?: boolean | null;
+    betId?: { toString?: () => string } | string | null;
+  };
+
+  const creatorAmountBase = readAnchorNumberLike(typedAccount.creatorAmount, 0);
+  const accepterAmountRequiredBase = readAnchorNumberLike(
+    typedAccount.accepterAmountRequired,
+    creatorAmountBase
+  );
+  const accepterAmountBase = readAnchorNumberLike(typedAccount.accepterAmount, 0);
+  const expiryTs = readAnchorNumberLike(typedAccount.expiryTs, 0);
+  const winnerSideRaw = readAnchorNumberLike(typedAccount.winnerSide, -1);
+
+  const mappedBet: RealBet = {
+    pubkey: pubkey.toBase58(),
+    creator: readAnchorPubkeyLike(typedAccount.creator),
+    accepter: readAnchorPubkeyLike(typedAccount.accepter),
+    mint: readAnchorPubkeyLike(typedAccount.mint),
+    creatorAmountUi: creatorAmountBase / 1_000_000,
+    accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
+    accepterAmountUi: accepterAmountBase / 1_000_000,
+    expiryTs,
+    state: getStateLabel(typedAccount.state),
+    creatorSide: readAnchorNumberLike(typedAccount.creatorSide, 0),
+    accepterSide: readAnchorNumberLike(typedAccount.accepterSide, 0),
+    winnerSide: winnerSideRaw >= 0 ? winnerSideRaw : null,
+    resolutionStatus: getResolutionStatusLabel(typedAccount.resolutionStatus),
+    payoutClaimed: Boolean(typedAccount.payoutClaimed),
+    betId:
+      typedAccount.betId &&
+      typeof typedAccount.betId === 'object' &&
+      typeof typedAccount.betId.toString === 'function'
+        ? typedAccount.betId.toString()
+        : typeof typedAccount.betId === 'string'
+          ? typedAccount.betId
+          : '0',
+  };
+
+  if (mappedBet.mint !== WANNABET_DEVNET_TEST_MINT.toBase58()) {
+    return null;
+  }
+
+  return mappedBet;
+}
+
 export default function MyBetsPage() {
   const { publicKey, wallet, signTransaction, signAllTransactions } = useWallet();
   const [bets, setBets] = useState<RealBet[]>([]);
@@ -133,6 +284,9 @@ export default function MyBetsPage() {
   const [cancellingBet, setCancellingBet] = useState('');
   const [cancelError, setCancelError] = useState('');
   const [cancelSuccess, setCancelSuccess] = useState('');
+  const [claimingBet, setClaimingBet] = useState('');
+  const [claimError, setClaimError] = useState('');
+  const [claimSuccess, setClaimSuccess] = useState('');
 
   const connectedWallet =
     publicKey && wallet && signTransaction && signAllTransactions
@@ -145,84 +299,92 @@ export default function MyBetsPage() {
 
   const loadBets = useCallback(async (showLoader = true) => {
     try {
+      if (!publicKey) {
+        setBets([]);
+        setError('');
+        if (showLoader) {
+          setLoading(false);
+        }
+        return;
+      }
+
       if (showLoader) {
         setLoading(true);
       }
+
       setError('');
 
       const connection = new Connection(SOLANA_RPC_URL, 'confirmed');
-      const dummyWallet = {
-        publicKey: Keypair.generate().publicKey,
-        signTransaction: async (tx: never) => tx,
-        signAllTransactions: async (txs: never[]) => txs,
-      };
+      const program = getDummyProgram(connection);
+      const walletBase58 = publicKey.toBase58();
 
-      const provider = new anchor.AnchorProvider(connection, dummyWallet as never, {
-        commitment: 'confirmed',
-      });
+      const [creatorAccounts, accepterAccounts] = await Promise.all([
+        connection.getProgramAccounts(WANNABET_ESCROW_PROGRAM_ID, {
+          commitment: 'confirmed',
+          filters: [
+            {
+              memcmp: {
+                offset: 0,
+                bytes: BET_ACCOUNT_DISCRIMINATOR_BASE58,
+              },
+            },
+            {
+              memcmp: {
+                offset: BET_CREATOR_OFFSET,
+                bytes: walletBase58,
+              },
+            },
+          ],
+        }),
+        connection.getProgramAccounts(WANNABET_ESCROW_PROGRAM_ID, {
+          commitment: 'confirmed',
+          filters: [
+            {
+              memcmp: {
+                offset: 0,
+                bytes: BET_ACCOUNT_DISCRIMINATOR_BASE58,
+              },
+            },
+            {
+              memcmp: {
+                offset: BET_ACCEPTER_OFFSET,
+                bytes: walletBase58,
+              },
+            },
+          ],
+        }),
+      ]);
 
-      const program = new anchor.Program(
-        {
-          ...(idl as anchor.Idl),
-          address: WANNABET_ESCROW_PROGRAM_ID.toBase58(),
-        } as anchor.Idl,
-        provider
+      const uniquePubkeys = Array.from(
+        new Set(
+          [...creatorAccounts, ...accepterAccounts].map(({ pubkey }) => pubkey.toBase58())
+        )
       );
 
-      const accounts = await (program.account as unknown as {
-        bet: { all: () => Promise<unknown[]> };
-      }).bet.all();
+      const fetched = await Promise.all(
+        uniquePubkeys.map(async (pubkeyBase58) => {
+          try {
+            const pubkey = new PublicKey(pubkeyBase58);
+            const account = await (program.account as unknown as {
+              bet: {
+                fetchNullable: (address: PublicKey) => Promise<Record<string, unknown> | null>;
+              };
+            }).bet.fetchNullable(pubkey);
 
-      const mapped: RealBet[] = accounts
-        .map((item) => {
-          const typedItem = item as {
-            publicKey: { toBase58: () => string };
-            account: Record<string, unknown>;
-          };
+            if (!account) {
+              return null;
+            }
 
-          const account = typedItem.account as Record<string, unknown> & {
-            creator?: { toBase58?: () => string; toString?: () => string } | null;
-            accepter?: { toBase58?: () => string; toString?: () => string } | null;
-            mint?: { toBase58?: () => string; toString?: () => string } | null;
-            creatorAmount?: { toNumber?: () => number; toString?: () => string } | null;
-            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string } | null;
-            accepterAmount?: { toNumber?: () => number; toString?: () => string } | null;
-            expiryTs?: { toNumber?: () => number; toString?: () => string } | null;
-            state?: Record<string, unknown> | null;
-            creatorSide?: number | null;
-            accepterSide?: number | null;
-            winnerSide?: number | null;
-            betId?: { toString?: () => string } | null;
-          };
-
-          const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
-          const accepterAmountRequiredBase = readAnchorNumberLike(
-            account.accepterAmountRequired,
-            creatorAmountBase
-          );
-          const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
-          const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
-
-          return {
-            pubkey: typedItem.publicKey.toBase58(),
-            creator: readAnchorPubkeyLike(account.creator),
-            accepter: readAnchorPubkeyLike(account.accepter),
-            mint: readAnchorPubkeyLike(account.mint),
-            creatorAmountUi: creatorAmountBase / 1_000_000,
-            accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
-            accepterAmountUi: accepterAmountBase / 1_000_000,
-            expiryTs,
-            state: getStateLabel(account.state),
-            creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
-            accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
-            winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
-            betId:
-              account.betId && typeof account.betId.toString === 'function'
-                ? account.betId.toString()
-                : '0',
-          };
+            return mapFetchedBet(pubkey, account);
+          } catch (innerErr) {
+            console.error('Skipping unreadable bet account:', pubkeyBase58, innerErr);
+            return null;
+          }
         })
-        .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
+      );
+
+      const mapped = fetched
+        .filter((bet): bet is RealBet => bet !== null)
         .sort((a, b) => b.expiryTs - a.expiryTs);
 
       setBets(mapped);
@@ -234,7 +396,7 @@ export default function MyBetsPage() {
         setLoading(false);
       }
     }
-  }, []);
+  }, [publicKey]);
 
   useEffect(() => {
     void loadBets();
@@ -344,6 +506,88 @@ export default function MyBetsPage() {
     }
   }
 
+  async function handleClaimWinnings(bet: RealBet) {
+    setClaimError('');
+    setClaimSuccess('');
+    setClaimingBet(bet.pubkey);
+
+    try {
+      if (!connectedWallet) {
+        setClaimError('Connect a Solana wallet first.');
+        return;
+      }
+
+      const program = getWannaBetProgram({
+        publicKey: connectedWallet.publicKey,
+        signTransaction: connectedWallet.signTransaction,
+        signAllTransactions: connectedWallet.signAllTransactions,
+      });
+
+      const betPubkey = new PublicKey(bet.pubkey);
+
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('config')],
+        WANNABET_ESCROW_PROGRAM_ID
+      );
+
+      const [escrowAuthorityPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from('escrow'), betPubkey.toBuffer()],
+        WANNABET_ESCROW_PROGRAM_ID
+      );
+
+      const claimantAta = getAssociatedTokenAddressSync(
+        WANNABET_DEVNET_TEST_MINT,
+        connectedWallet.publicKey
+      );
+
+      const escrowAta = getAssociatedTokenAddressSync(
+        WANNABET_DEVNET_TEST_MINT,
+        escrowAuthorityPda,
+        true
+      );
+
+      const config = await (
+        program.account as unknown as {
+          config: {
+            fetch: (address: PublicKey) => Promise<ConfigAccountShape>;
+          };
+        }
+      ).config.fetch(configPda);
+
+      const feeVault =
+        config.feeVault instanceof PublicKey
+          ? config.feeVault
+          : new PublicKey(
+              typeof config.feeVault === 'string'
+                ? config.feeVault
+                : config.feeVault.toBase58()
+            );
+
+      const tx = await program.methods
+        .claimWinnings()
+        .accounts({
+          claimant: connectedWallet.publicKey,
+          config: configPda,
+          bet: betPubkey,
+          mint: WANNABET_DEVNET_TEST_MINT,
+          claimantAta,
+          escrowAuthority: escrowAuthorityPda,
+          escrowAta,
+          feeVault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .rpc();
+
+      setClaimSuccess(`Winnings claimed. TX: ${tx}`);
+      void loadBets(false);
+    } catch (err) {
+      console.error(err);
+      setClaimError(getFriendlyClaimErrorMessage(err));
+    } finally {
+      setClaimingBet('');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-white/10 bg-panel p-5">
@@ -384,6 +628,18 @@ export default function MyBetsPage() {
         </section>
       ) : null}
 
+      {claimError ? (
+        <section className="rounded-xl border border-red-500/30 bg-red-500/10 p-5 text-sm text-red-200">
+          {claimError}
+        </section>
+      ) : null}
+
+      {claimSuccess ? (
+        <section className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5 text-sm text-emerald-200">
+          {claimSuccess}
+        </section>
+      ) : null}
+
       {publicKey && !loading && !error ? (
         <section className="rounded-xl border border-white/10 bg-panel p-3">
           <div className="inline-flex rounded-md border border-white/10 bg-black/20 p-1">
@@ -391,7 +647,9 @@ export default function MyBetsPage() {
               type="button"
               onClick={() => setActiveTab('CREATED')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                activeTab === 'CREATED' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
+                activeTab === 'CREATED'
+                  ? 'bg-neon/25 text-neon'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               Created by me ({createdByMe.length})
@@ -400,7 +658,9 @@ export default function MyBetsPage() {
               type="button"
               onClick={() => setActiveTab('ACCEPTED')}
               className={`rounded-md px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] transition ${
-                activeTab === 'ACCEPTED' ? 'bg-neon/25 text-neon' : 'text-white/60 hover:text-white'
+                activeTab === 'ACCEPTED'
+                  ? 'bg-neon/25 text-neon'
+                  : 'text-white/60 hover:text-white'
               }`}
             >
               Accepted by me ({acceptedByMe.length})
@@ -424,7 +684,10 @@ export default function MyBetsPage() {
             const displayedOpponentStake =
               bet.state === 'OPEN' ? bet.accepterAmountRequiredUi : bet.accepterAmountUi;
             const totalPot = bet.creatorAmountUi + displayedOpponentStake;
-            const oddsLabel = formatStakeRatio(bet.creatorAmountUi, displayedOpponentStake);
+            const oddsLabel = formatStakeRatio(
+              bet.creatorAmountUi,
+              displayedOpponentStake > 0 ? displayedOpponentStake : bet.accepterAmountRequiredUi
+            );
             const canCancel = activeTab === 'CREATED' && bet.state === 'OPEN';
 
             const opponentDisplay = isAcceptedView
@@ -433,7 +696,11 @@ export default function MyBetsPage() {
                 ? shortAddress(bet.accepter)
                 : 'Unfilled';
 
-            const yourStakeAmount = isAcceptedView ? bet.accepterAmountUi : bet.creatorAmountUi;
+            const yourStakeAmount = isAcceptedView
+              ? bet.accepterAmountUi > 0
+                ? bet.accepterAmountUi
+                : bet.accepterAmountRequiredUi
+              : bet.creatorAmountUi;
 
             const opponentStakeAmount =
               bet.state === 'OPEN'
@@ -444,6 +711,41 @@ export default function MyBetsPage() {
 
             const opponentStakeLabel =
               bet.state === 'OPEN' ? 'Opponent stake required' : 'Opponent stake';
+
+            const isWinner =
+              bet.state === 'RESOLVED' &&
+              bet.winnerSide !== null &&
+              ((isAcceptedView && bet.winnerSide === bet.accepterSide) ||
+                (!isAcceptedView && bet.winnerSide === bet.creatorSide));
+
+            const isLoser =
+              bet.state === 'RESOLVED' &&
+              bet.winnerSide !== null &&
+              !isWinner;
+
+            const canClaimWinnings =
+              isWinner &&
+              bet.resolutionStatus === 'RESOLVED' &&
+              bet.payoutClaimed === false;
+
+            const showClaimed =
+              isWinner &&
+              bet.resolutionStatus === 'RESOLVED' &&
+              bet.payoutClaimed === true;
+
+            const resultLabel =
+              isWinner ? 'WON' : isLoser ? 'LOST' : bet.state === 'LOCKED' ? 'IN PLAY' : bet.state;
+
+            const resultBadgeClass =
+              resultLabel === 'WON'
+                ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
+                : resultLabel === 'LOST'
+                  ? 'rounded-md border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-red-200'
+                  : resultLabel === 'IN PLAY'
+                    ? 'rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200'
+                    : bet.state === 'OPEN'
+                      ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
+                      : 'rounded-md border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70';
 
             return (
               <article
@@ -456,17 +758,7 @@ export default function MyBetsPage() {
                       {activeTab === 'CREATED' ? 'Created by me' : 'Accepted by me'}
                     </p>
                   </div>
-                  <span
-                    className={
-                      bet.state === 'LOCKED'
-                        ? 'rounded-md border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-red-200'
-                        : bet.state === 'OPEN'
-                          ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
-                          : 'rounded-md border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70'
-                    }
-                  >
-                    {bet.state}
-                  </span>
+                  <span className={resultBadgeClass}>{resultLabel}</span>
                 </div>
 
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(totalPot)}</p>
@@ -492,24 +784,45 @@ export default function MyBetsPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex gap-2">
-                  <Link
-                    href={`/bets/${bet.pubkey}`}
-                    className="inline-flex rounded-md border border-neon/50 bg-neon/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-neon transition hover:bg-neon/30"
-                  >
-                    View details
-                  </Link>
-
-                  {canCancel ? (
-                    <button
-                      type="button"
-                      onClick={() => void handleCancelBet(bet)}
-                      disabled={cancellingBet === bet.pubkey}
-                      className="inline-flex rounded-md border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                <div className="mt-auto pt-4 flex items-end justify-between gap-2">
+                  <div className="flex-shrink-0">
+                    <Link
+                      href={`/bets/${bet.pubkey}`}
+                      className="inline-flex rounded-md border border-neon/50 bg-neon/20 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-neon transition hover:bg-neon/30"
                     >
-                      {cancellingBet === bet.pubkey ? 'Cancelling...' : 'Cancel bet'}
-                    </button>
-                  ) : null}
+                      View details
+                    </Link>
+                  </div>
+
+                  <div className="ml-auto flex flex-wrap justify-end gap-2">
+                    {canCancel ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleCancelBet(bet)}
+                        disabled={cancellingBet === bet.pubkey}
+                        className="inline-flex rounded-md border border-red-500/40 bg-red-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {cancellingBet === bet.pubkey ? 'Cancelling...' : 'Cancel bet'}
+                      </button>
+                    ) : null}
+
+                    {canClaimWinnings ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleClaimWinnings(bet)}
+                        disabled={claimingBet === bet.pubkey}
+                        className="inline-flex rounded-md border border-emerald-500/40 bg-emerald-500/15 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-emerald-200 transition hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {claimingBet === bet.pubkey ? 'Claiming...' : 'Claim winnings'}
+                      </button>
+                    ) : null}
+
+                    {showClaimed ? (
+                      <span className="inline-flex rounded-md border border-white/20 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-white/70">
+                        Claimed
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               </article>
             );

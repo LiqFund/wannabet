@@ -8,7 +8,11 @@ import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-tok
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import idl from '@/lib/idl/wannabet_escrow.json';
 import { formatUSDC } from '@/lib/format';
-import { SOLANA_RPC_URL, WANNABET_ESCROW_PROGRAM_ID, WANNABET_DEVNET_TEST_MINT } from '@/lib/solana';
+import {
+  SOLANA_RPC_URL,
+  WANNABET_ESCROW_PROGRAM_ID,
+  WANNABET_DEVNET_TEST_MINT,
+} from '@/lib/solana';
 
 type RealBet = {
   pubkey: string;
@@ -27,6 +31,7 @@ type RealBet = {
 };
 
 const DEFAULT_PUBKEY = PublicKey.default.toBase58();
+const CURRENT_BET_ACCOUNT_SIZE = 190;
 
 function getUserDisplay(value: string) {
   return value.slice(0, 5);
@@ -146,8 +151,10 @@ export default function HomePage() {
       );
 
       const accounts = await (program.account as unknown as {
-        bet: { all: () => Promise<unknown[]> };
-      }).bet.all();
+        bet: {
+          all: (filters?: Array<{ dataSize: number }>) => Promise<unknown[]>;
+        };
+      }).bet.all([{ dataSize: CURRENT_BET_ACCOUNT_SIZE }]);
 
       const mapped: RealBet[] = accounts
         .map((item) => {

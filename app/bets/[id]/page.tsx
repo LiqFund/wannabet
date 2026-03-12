@@ -2,8 +2,13 @@ import * as anchor from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import { notFound } from 'next/navigation';
 import idl from '@/lib/idl/wannabet_escrow.json';
+import BetSettlementActions from '@/components/bet-settlement-actions';
 import { formatDateUtc, formatUSDC, shortAddress } from '@/lib/format';
-import { SOLANA_RPC_URL, WANNABET_ESCROW_PROGRAM_ID, WANNABET_DEVNET_TEST_MINT } from '@/lib/solana';
+import {
+  SOLANA_RPC_URL,
+  WANNABET_ESCROW_PROGRAM_ID,
+  WANNABET_DEVNET_TEST_MINT
+} from '@/lib/solana';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +24,12 @@ type RealBet = {
   state: string;
   creatorSide: number;
   accepterSide: number;
-  winnerSide: number;
+  winnerSide: number | null;
+  resolvedAtTs: number;
+  resolutionStatus: string;
+  payoutClaimed: boolean;
+  creatorRefundClaimed: boolean;
+  accepterRefundClaimed: boolean;
   betId: string;
 };
 
@@ -28,6 +38,16 @@ function getStateLabel(state: Record<string, unknown>) {
   if (state.locked) return 'LOCKED';
   if (state.cancelled) return 'CANCELLED';
   if (state.resolved) return 'RESOLVED';
+  return 'UNKNOWN';
+}
+
+function getResolutionStatusLabel(
+  status: Record<string, unknown> | null | undefined
+) {
+  if (!status || typeof status !== 'object') return 'UNKNOWN';
+  if ('pending' in status) return 'PENDING';
+  if ('resolved' in status) return 'RESOLVED';
+  if ('voided' in status) return 'VOIDED';
   return 'UNKNOWN';
 }
 
@@ -88,10 +108,15 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
       accepterAmountRequired: { toNumber?: () => number; toString: () => string };
       accepterAmount: { toNumber?: () => number; toString: () => string };
       expiryTs: { toNumber?: () => number; toString: () => string };
+      resolvedAtTs: { toNumber?: () => number; toString: () => string };
       state: Record<string, unknown>;
+      resolutionStatus: Record<string, unknown>;
       creatorSide: number;
       accepterSide: number;
-      winnerSide: number;
+      winnerSide?: { toNumber?: () => number; toString: () => string } | number | null;
+      payoutClaimed: boolean;
+      creatorRefundClaimed: boolean;
+      accepterRefundClaimed: boolean;
       betId: { toString: () => string };
     };
 
@@ -115,6 +140,20 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
         ? typed.expiryTs.toNumber()
         : Number(typed.expiryTs.toString());
 
+    const resolvedAtTs =
+      typeof typed.resolvedAtTs?.toNumber === 'function'
+        ? typed.resolvedAtTs.toNumber()
+        : Number(typed.resolvedAtTs?.toString?.() ?? '0');
+
+    const winnerSide =
+      typed.winnerSide === null || typed.winnerSide === undefined
+        ? null
+        : typeof typed.winnerSide === 'number'
+          ? typed.winnerSide
+          : typeof typed.winnerSide?.toNumber === 'function'
+            ? typed.winnerSide.toNumber()
+            : Number(typed.winnerSide.toString());
+
     const bet: RealBet = {
       pubkey,
       creator: typed.creator.toBase58(),
@@ -127,7 +166,12 @@ async function getRealBet(pubkey: string): Promise<RealBet | null> {
       state: getStateLabel(typed.state),
       creatorSide: typed.creatorSide,
       accepterSide: typed.accepterSide,
-      winnerSide: typed.winnerSide,
+      winnerSide,
+      resolvedAtTs,
+      resolutionStatus: getResolutionStatusLabel(typed.resolutionStatus),
+      payoutClaimed: Boolean(typed.payoutClaimed),
+      creatorRefundClaimed: Boolean(typed.creatorRefundClaimed),
+      accepterRefundClaimed: Boolean(typed.accepterRefundClaimed),
       betId: typed.betId.toString()
     };
 
@@ -147,15 +191,20 @@ export async function generateMetadata({ params }: { params: { id: string } }) {
   };
 }
 
-export default async function BetDetailPage({ params }: { params: { id: string } }) {
+export default async function BetDetailPage({
+  params
+}: {
+  params: { id: string };
+}) {
   const bet = await getRealBet(params.id);
 
   if (!bet) {
     notFound();
   }
 
-  const isMatched =
-    bet.accepter !== PublicKey.default.toBase58() && bet.accepterAmountUi > 0;
+  const defaultPubkey = PublicKey.default.toBase58();
+  const isMatched = bet.accepter !== defaultPubkey && bet.accepterAmountUi > 0;
+  const accepterForActions = bet.accepter === defaultPubkey ? null : bet.accepter;
 
   const displayedOpponentStake = isMatched
     ? bet.accepterAmountUi
@@ -166,6 +215,8 @@ export default async function BetDetailPage({ params }: { params: { id: string }
     bet.creatorAmountUi,
     bet.accepterAmountRequiredUi
   );
+
+  const solscanUrl = `https://solscan.io/account/${bet.pubkey}?cluster=devnet`;
 
   return (
     <div className="space-y-6">
@@ -179,23 +230,32 @@ export default async function BetDetailPage({ params }: { params: { id: string }
         <p className="mt-2 text-sm text-white/75">
           Live on-chain escrow account loaded directly from devnet.
         </p>
+        <a
+          href={solscanUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex rounded-md border border-neon/50 bg-neon/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.08em] text-neon transition hover:bg-neon/20"
+        >
+          View on Solscan
+        </a>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <section className="rounded-lg border border-white/15 bg-panel/95 p-5 shadow-magenta transition hover:-translate-y-0.5 hover:border-white/20">
           <h2 className="font-semibold tracking-tight text-neon">Bet details</h2>
           <ul className="mt-3 space-y-2 break-all text-sm text-white/80">
-            <li>State: {bet.state}</li>
+            <li>State: {bet.state === 'LOCKED' ? 'IN PLAY' : bet.state}</li>
             <li>Bet account: {bet.pubkey}</li>
             <li>Internal bet id: {bet.betId}</li>
             <li>Mint: {bet.mint}</li>
-            <li>Creator: {bet.creator}</li>
-            <li>Opponent: {isMatched ? bet.accepter : 'Unfilled'}</li>
+            <li>Creator wallet: {bet.creator}</li>
+            <li>Opponent wallet: {isMatched ? bet.accepter : 'Unfilled'}</li>
             <li>Stake ratio: {stakeRatio}</li>
-            <li>Creator stake: {formatUSDC(bet.creatorAmountUi)}</li>
-            <li>Opponent stake required: {formatUSDC(bet.accepterAmountRequiredUi)}</li>
+            <li>Your side stake: {formatUSDC(bet.creatorAmountUi)}</li>
+            <li>Opponent side stake required: {formatUSDC(bet.accepterAmountRequiredUi)}</li>
             <li>
-              Opponent stake posted: {isMatched ? formatUSDC(bet.accepterAmountUi) : 'Not filled yet'}
+              Opponent side stake posted:{' '}
+              {isMatched ? formatUSDC(bet.accepterAmountUi) : 'Not filled yet'}
             </li>
             <li>Total pot: {formatUSDC(totalPot)}</li>
           </ul>
@@ -205,9 +265,23 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           <h2 className="font-semibold tracking-tight text-neon">Settlement</h2>
           <ul className="mt-3 space-y-2 text-sm text-white/80">
             <li>Expires: {formatExpiryUtc(bet.expiryTs)}</li>
-            <li>Creator side: {bet.creatorSide}</li>
+            <li>
+              Resolved at:{' '}
+              {bet.resolvedAtTs > 0
+                ? formatExpiryUtc(bet.resolvedAtTs)
+                : 'Not resolved yet'}
+            </li>
+            <li>Your side: {bet.creatorSide}</li>
             <li>Opponent side: {bet.accepterSide}</li>
-            <li>Winner side: {bet.winnerSide}</li>
+            <li>Winning side: {bet.winnerSide ?? 'Not set'}</li>
+            <li>Resolution status: {bet.resolutionStatus}</li>
+            <li>Payout claimed: {bet.payoutClaimed ? 'Yes' : 'No'}</li>
+            <li>
+              Creator refund claimed: {bet.creatorRefundClaimed ? 'Yes' : 'No'}
+            </li>
+            <li>
+              Opponent refund claimed: {bet.accepterRefundClaimed ? 'Yes' : 'No'}
+            </li>
             <li>Matched: {isMatched ? 'Yes' : 'No'}</li>
           </ul>
           <p className="mt-4 rounded-md border border-magenta/40 bg-magenta/10 p-3 text-xs font-medium tracking-wide text-magenta">
@@ -215,6 +289,18 @@ export default async function BetDetailPage({ params }: { params: { id: string }
           </p>
         </section>
       </div>
+
+      <BetSettlementActions
+        betPubkey={bet.pubkey}
+        creator={bet.creator}
+        accepter={accepterForActions}
+        creatorSide={bet.creatorSide}
+        winnerSide={bet.winnerSide}
+        resolutionStatus={bet.resolutionStatus}
+        payoutClaimed={bet.payoutClaimed}
+        creatorRefundClaimed={bet.creatorRefundClaimed}
+        accepterRefundClaimed={bet.accepterRefundClaimed}
+      />
     </div>
   );
 }
