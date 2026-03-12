@@ -8,7 +8,7 @@ import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-tok
 import { Connection, Keypair, PublicKey } from '@solana/web3.js';
 import idl from '@/lib/idl/wannabet_escrow.json';
 import { getWannaBetProgram } from '@/lib/anchor';
-import { formatUSDC, shortAddress } from '@/lib/format';
+import { formatDateUtc, formatUSDC, shortAddress } from '@/lib/format';
 import {
   SOLANA_RPC_URL,
   WANNABET_DEVNET_TEST_MINT,
@@ -28,6 +28,14 @@ type RealBet = {
   creatorSide: number;
   accepterSide: number;
   winnerSide: number | null;
+  marketKind: string;
+  priceSymbol: string;
+  priceVenue: string;
+  settlementMinuteTs: number;
+  comparator: string;
+  strikeE8: number;
+  resolvedPriceE8: number;
+  resolvedAtTs: number;
   resolutionStatus: string;
   payoutClaimed: boolean;
   betId: string;
@@ -74,6 +82,49 @@ function getResolutionStatusLabel(status: Record<string, unknown> | null | undef
   return 'UNKNOWN';
 }
 
+function readEnumVariantKey(value: Record<string, unknown> | null | undefined) {
+  if (!value || typeof value !== 'object') return 'unknown';
+  const [key] = Object.keys(value);
+  return key ?? 'unknown';
+}
+
+function getMarketKindLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'custom') return 'CUSTOM';
+  if (key === 'cryptoPriceBinary') return 'CRYPTO_PRICE_BINARY';
+
+  return 'UNKNOWN';
+}
+
+function getPriceSymbolLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'btcUsdt') return 'BTC/USDT';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
+function getPriceVenueLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'binanceSpot') return 'BINANCE_SPOT';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
+function getComparatorLabel(value: Record<string, unknown> | null | undefined) {
+  const key = readEnumVariantKey(value);
+
+  if (key === 'greaterThanOrEqual') return 'ABOVE_OR_EQUAL';
+  if (key === 'lessThan') return 'BELOW';
+  if (key === 'unknown') return 'UNKNOWN';
+
+  return 'UNKNOWN';
+}
+
 function formatRemaining(expiryTs: number) {
   const now = Math.floor(Date.now() / 1000);
   const diff = expiryTs - now;
@@ -104,6 +155,20 @@ function formatStakeRatio(left: number, right: number) {
   }
 
   return `${ratio.toFixed(2).replace(/\.00$/, '')}:1`;
+}
+
+function formatUtcTimestamp(ts: number) {
+  if (ts <= 0) return 'Not set';
+  return formatDateUtc(new Date(ts * 1000));
+}
+
+function formatPriceFromE8(value: number) {
+  if (value <= 0) return 'Not set';
+
+  return (value / 100_000_000).toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  });
 }
 
 function readAnchorNumberLike(value: AnchorNumberLike, fallback = 0) {
@@ -230,6 +295,14 @@ function mapFetchedBet(
     creatorSide?: AnchorNumberLike;
     accepterSide?: AnchorNumberLike;
     winnerSide?: AnchorNumberLike;
+    marketKind?: Record<string, unknown> | null;
+    priceSymbol?: Record<string, unknown> | null;
+    priceVenue?: Record<string, unknown> | null;
+    settlementMinuteTs?: AnchorNumberLike;
+    comparator?: Record<string, unknown> | null;
+    strikeE8?: AnchorNumberLike;
+    resolvedPriceE8?: AnchorNumberLike;
+    resolvedAtTs?: AnchorNumberLike;
     payoutClaimed?: boolean | null;
     betId?: { toString?: () => string } | string | null;
   };
@@ -256,6 +329,14 @@ function mapFetchedBet(
     creatorSide: readAnchorNumberLike(typedAccount.creatorSide, 0),
     accepterSide: readAnchorNumberLike(typedAccount.accepterSide, 0),
     winnerSide: winnerSideRaw >= 0 ? winnerSideRaw : null,
+    marketKind: getMarketKindLabel(typedAccount.marketKind),
+    priceSymbol: getPriceSymbolLabel(typedAccount.priceSymbol),
+    priceVenue: getPriceVenueLabel(typedAccount.priceVenue),
+    settlementMinuteTs: readAnchorNumberLike(typedAccount.settlementMinuteTs, 0),
+    comparator: getComparatorLabel(typedAccount.comparator),
+    strikeE8: readAnchorNumberLike(typedAccount.strikeE8, 0),
+    resolvedPriceE8: readAnchorNumberLike(typedAccount.resolvedPriceE8, 0),
+    resolvedAtTs: readAnchorNumberLike(typedAccount.resolvedAtTs, 0),
     resolutionStatus: getResolutionStatusLabel(typedAccount.resolutionStatus),
     payoutClaimed: Boolean(typedAccount.payoutClaimed),
     betId:
@@ -273,6 +354,50 @@ function mapFetchedBet(
   }
 
   return mappedBet;
+}
+
+function getMarketTitle(bet: RealBet) {
+  const isBtcThresholdBet =
+    bet.marketKind === 'CRYPTO_PRICE_BINARY' &&
+    bet.priceSymbol === 'BTC/USDT' &&
+    bet.priceVenue === 'BINANCE_SPOT';
+
+  if (isBtcThresholdBet) return 'BTC/USDT threshold bet';
+  if (bet.marketKind === 'CUSTOM') return 'Custom escrow bet';
+
+  return 'On-chain bet';
+}
+
+function getMarketSubtitle(bet: RealBet) {
+  const isBtcThresholdBet =
+    bet.marketKind === 'CRYPTO_PRICE_BINARY' &&
+    bet.priceSymbol === 'BTC/USDT' &&
+    bet.priceVenue === 'BINANCE_SPOT';
+
+  if (isBtcThresholdBet) return 'Binance Spot';
+  if (bet.marketKind === 'CUSTOM') return 'Custom market';
+
+  return 'Market metadata unavailable';
+}
+
+function getPositionLabel(bet: RealBet, isAcceptedView: boolean) {
+  if (
+    bet.marketKind === 'CRYPTO_PRICE_BINARY' &&
+    bet.priceSymbol === 'BTC/USDT' &&
+    bet.priceVenue === 'BINANCE_SPOT'
+  ) {
+    const youAreCreator = !isAcceptedView;
+
+    if (bet.comparator === 'ABOVE_OR_EQUAL') {
+      return youAreCreator ? 'BTC at or above strike' : 'BTC below strike';
+    }
+
+    if (bet.comparator === 'BELOW') {
+      return youAreCreator ? 'BTC below strike' : 'BTC at or above strike';
+    }
+  }
+
+  return isAcceptedView ? 'Accepted side' : 'Created side';
 }
 
 export default function MyBetsPage() {
@@ -385,7 +510,11 @@ export default function MyBetsPage() {
 
       const mapped = fetched
         .filter((bet): bet is RealBet => bet !== null)
-        .sort((a, b) => b.expiryTs - a.expiryTs);
+        .sort((a, b) => {
+          const aTarget = a.settlementMinuteTs > 0 ? a.settlementMinuteTs : a.expiryTs;
+          const bTarget = b.settlementMinuteTs > 0 ? b.settlementMinuteTs : b.expiryTs;
+          return bTarget - aTarget;
+        });
 
       setBets(mapped);
     } catch (err) {
@@ -595,7 +724,9 @@ export default function MyBetsPage() {
           Live devnet wallet view
         </p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-white">My Bets</h1>
-        <p className="mt-2 text-sm text-white/70">Track bets you created and bets you accepted.</p>
+        <p className="mt-2 text-sm text-white/70">
+          Track bets you created, bets you joined, and whether you can claim.
+        </p>
       </section>
 
       {!publicKey ? (
@@ -689,6 +820,8 @@ export default function MyBetsPage() {
               displayedOpponentStake > 0 ? displayedOpponentStake : bet.accepterAmountRequiredUi
             );
             const canCancel = activeTab === 'CREATED' && bet.state === 'OPEN';
+            const marketTitle = getMarketTitle(bet);
+            const marketSubtitle = getMarketSubtitle(bet);
 
             const opponentDisplay = isAcceptedView
               ? shortAddress(bet.creator)
@@ -733,19 +866,44 @@ export default function MyBetsPage() {
               bet.resolutionStatus === 'RESOLVED' &&
               bet.payoutClaimed === true;
 
-            const resultLabel =
-              isWinner ? 'WON' : isLoser ? 'LOST' : bet.state === 'LOCKED' ? 'IN PLAY' : bet.state;
+            const isBtcThresholdBet =
+              bet.marketKind === 'CRYPTO_PRICE_BINARY' &&
+              bet.priceSymbol === 'BTC/USDT' &&
+              bet.priceVenue === 'BINANCE_SPOT';
+
+            const timeTargetTs =
+              isBtcThresholdBet && bet.settlementMinuteTs > 0
+                ? bet.settlementMinuteTs
+                : bet.expiryTs;
+
+            const timeLabel = isBtcThresholdBet ? 'Settles' : 'Expires';
+            const remainingLabel = formatRemaining(timeTargetTs);
+            const isPastTarget = remainingLabel === 'Expired';
+            const isAwaitingResolution =
+              bet.state === 'LOCKED' && bet.resolutionStatus === 'PENDING' && isPastTarget;
+
+            const resultLabel = isWinner
+              ? 'WON'
+              : isLoser
+                ? 'LOST'
+                : isAwaitingResolution
+                  ? 'AWAITING RESULT'
+                  : bet.state === 'LOCKED'
+                    ? 'IN PLAY'
+                    : bet.state;
 
             const resultBadgeClass =
               resultLabel === 'WON'
                 ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
                 : resultLabel === 'LOST'
                   ? 'rounded-md border border-red-500/40 bg-red-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-red-200'
-                  : resultLabel === 'IN PLAY'
-                    ? 'rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200'
-                    : bet.state === 'OPEN'
-                      ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
-                      : 'rounded-md border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70';
+                  : resultLabel === 'AWAITING RESULT'
+                    ? 'rounded-md border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-sky-200'
+                    : resultLabel === 'IN PLAY'
+                      ? 'rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200'
+                      : bet.state === 'OPEN'
+                        ? 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200'
+                        : 'rounded-md border border-white/20 bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white/70';
 
             return (
               <article
@@ -762,16 +920,21 @@ export default function MyBetsPage() {
                 </div>
 
                 <p className="mt-3 text-3xl font-black text-white">{formatUSDC(totalPot)}</p>
+                <p className="mt-2 text-sm font-semibold text-white/85">{marketTitle}</p>
+                <p className="mt-1 text-xs text-white/60">{marketSubtitle}</p>
 
                 <div className="mt-3 rounded-md border border-white/10 bg-black/20 p-3">
                   <div className="grid grid-cols-[1fr_auto] gap-y-1 text-[11px] uppercase tracking-[0.08em]">
                     <p className="text-white/50">Odds</p>
                     <span className="rounded-full border border-sky-400/60 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-sky-300">
-                      Odds {oddsLabel}
+                      {oddsLabel}
                     </span>
 
                     <p className="text-white/50">Opponent</p>
                     <p className="font-semibold text-white/85">{opponentDisplay}</p>
+
+                    <p className="text-white/50">Your position</p>
+                    <p className="font-semibold text-white/85">{getPositionLabel(bet, isAcceptedView)}</p>
 
                     <p className="text-white/50">Your stake</p>
                     <p className="font-semibold text-white/85">{formatUSDC(yourStakeAmount)}</p>
@@ -779,12 +942,48 @@ export default function MyBetsPage() {
                     <p className="text-white/50">{opponentStakeLabel}</p>
                     <p className="font-semibold text-white/85">{formatUSDC(opponentStakeAmount)}</p>
 
-                    <p className="text-white/50">Time remaining</p>
-                    <p className="font-semibold text-white/85">{formatRemaining(bet.expiryTs)}</p>
+                    <p className="text-white/50">{timeLabel}</p>
+                    <p className="font-semibold text-white/85">{formatUtcTimestamp(timeTargetTs)}</p>
+
+                    {isBtcThresholdBet ? (
+                      <>
+                        <p className="text-white/50">Strike</p>
+                        <p className="font-semibold text-white/85">{formatPriceFromE8(bet.strikeE8)}</p>
+
+                        <p className="text-white/50">Direction</p>
+                        <p className="font-semibold text-white/85">
+                          {bet.comparator === 'ABOVE_OR_EQUAL'
+                            ? 'Above or equal'
+                            : bet.comparator === 'BELOW'
+                              ? 'Below'
+                              : 'Unknown'}
+                        </p>
+
+                        <p className="text-white/50">Resolved price</p>
+                        <p className="font-semibold text-white/85">
+                          {bet.resolvedPriceE8 > 0 ? formatPriceFromE8(bet.resolvedPriceE8) : 'Not resolved yet'}
+                        </p>
+                      </>
+                    ) : null}
+
+                    <p className="text-white/50">Status</p>
+                    <p className="font-semibold text-white/85">
+                      {bet.state === 'LOCKED' ? 'In play' : bet.state}
+                    </p>
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 flex items-end justify-between gap-2">
+                <div className="mt-4 text-xs text-white/55">
+                  {bet.state === 'OPEN'
+                    ? `Time remaining: ${remainingLabel}`
+                    : bet.state === 'RESOLVED'
+                      ? `Resolved ${bet.resolvedAtTs > 0 ? formatUtcTimestamp(bet.resolvedAtTs) : ''}`
+                      : isAwaitingResolution
+                        ? 'Waiting for resolution'
+                        : `In play, ${remainingLabel} left`}
+                </div>
+
+                <div className="mt-auto flex items-end justify-between gap-2 pt-4">
                   <div className="flex-shrink-0">
                     <Link
                       href={`/bets/${bet.pubkey}`}
