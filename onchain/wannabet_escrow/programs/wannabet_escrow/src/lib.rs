@@ -80,6 +80,19 @@ fn validate_supported_crypto_price_bet(bet: &Bet) -> Result<()> {
 }
 
 #[inline(always)]
+fn validate_crypto_price_resolve_ready(bet: &Bet, now: i64) -> Result<()> {
+    validate_supported_crypto_price_bet(bet)?;
+
+    let candle_close_ts = bet
+        .settlement_minute_ts
+        .checked_add(60)
+        .ok_or(ErrorCode::MathOverflow)?;
+
+    require!(now >= candle_close_ts, ErrorCode::BetNotExpired);
+    Ok(())
+}
+
+#[inline(always)]
 fn compute_crypto_price_winner_side(bet: &Bet, resolved_price_e8: u64) -> Result<u8> {
     validate_supported_crypto_price_bet(bet)?;
     require!(resolved_price_e8 > 0, ErrorCode::InvalidResolvedPrice);
@@ -353,6 +366,8 @@ pub mod wannabet_escrow {
             bet.accepter != Pubkey::default(),
             ErrorCode::WinnerUnavailable
         );
+
+        validate_crypto_price_resolve_ready(&*bet, now)?;
 
         let winner_side = compute_crypto_price_winner_side(&*bet, resolved_price_e8)?;
 

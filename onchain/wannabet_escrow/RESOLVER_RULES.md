@@ -18,6 +18,14 @@ For threshold crypto price bets, the canonical settlement price is:
 - of the **1 minute Binance spot kline**
 - whose **open time in milliseconds equals `settlement_minute_ts * 1000`**
 
+## Candle finality rule
+
+A crypto price bet is **not resolver-ready at `settlement_minute_ts` itself**.
+
+It is only resolver-ready after the full 1 minute candle has closed, meaning:
+
+- `current time >= settlement_minute_ts + 60`
+
 ## Why this rule exists
 
 This rule is intentionally strict so settlement is:
@@ -72,7 +80,7 @@ Crypto price bets must be resolved through the dedicated crypto price resolver p
 The current resolver worker flow is:
 
 1. scan chain for locked, pending, supported crypto price bets
-2. ensure `settlement_minute_ts <= current time`
+2. ensure `current time >= settlement_minute_ts + 60`
 3. fetch Binance 1 minute kline for that exact settlement minute
 4. read the candle close
 5. convert close to `resolved_price_e8`
