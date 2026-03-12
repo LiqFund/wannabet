@@ -31,7 +31,6 @@ type RealBet = {
 };
 
 const DEFAULT_PUBKEY = PublicKey.default.toBase58();
-const CURRENT_BET_ACCOUNT_SIZE = 190;
 
 function getUserDisplay(value: string) {
   return value.slice(0, 5);
@@ -150,60 +149,66 @@ export default function HomePage() {
         provider
       );
 
-      const accounts = await (program.account as unknown as {
-        bet: {
-          all: (filters?: Array<{ dataSize: number }>) => Promise<unknown[]>;
-        };
-      }).bet.all([{ dataSize: CURRENT_BET_ACCOUNT_SIZE }]);
+      const programAccounts = await connection.getProgramAccounts(
+        WANNABET_ESCROW_PROGRAM_ID
+      );
 
-      const mapped: RealBet[] = accounts
-        .map((item) => {
-          const typedItem = item as {
-            publicKey: { toBase58: () => string };
-            account: Record<string, unknown>;
-          };
+      const mapped: RealBet[] = programAccounts
+        .flatMap((item) => {
+          try {
+            const account = (
+              program.coder.accounts as unknown as {
+                decode: (
+                  accountName: string,
+                  data: Buffer
+                ) => Record<string, unknown>;
+              }
+            ).decode('bet', item.account.data) as Record<string, unknown> & {
+              creator?: { toBase58?: () => string; toString?: () => string } | null;
+              accepter?: { toBase58?: () => string; toString?: () => string } | null;
+              mint?: { toBase58?: () => string; toString?: () => string } | null;
+              creatorAmount?: { toNumber?: () => number; toString?: () => string } | null;
+              accepterAmountRequired?: { toNumber?: () => number; toString?: () => string } | null;
+              accepterAmount?: { toNumber?: () => number; toString?: () => string } | null;
+              expiryTs?: { toNumber?: () => number; toString?: () => string } | null;
+              state?: Record<string, unknown> | null;
+              creatorSide?: number | null;
+              accepterSide?: number | null;
+              winnerSide?: number | null;
+              betId?: { toString?: () => string } | null;
+            };
 
-          const account = typedItem.account as Record<string, unknown> & {
-            creator?: { toBase58?: () => string; toString?: () => string } | null;
-            accepter?: { toBase58?: () => string; toString?: () => string } | null;
-            mint?: { toBase58?: () => string; toString?: () => string } | null;
-            creatorAmount?: { toNumber?: () => number; toString?: () => string } | null;
-            accepterAmountRequired?: { toNumber?: () => number; toString?: () => string } | null;
-            accepterAmount?: { toNumber?: () => number; toString?: () => string } | null;
-            expiryTs?: { toNumber?: () => number; toString?: () => string } | null;
-            state?: Record<string, unknown> | null;
-            creatorSide?: number | null;
-            accepterSide?: number | null;
-            winnerSide?: number | null;
-            betId?: { toString?: () => string } | null;
-          };
+            const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
+            const accepterAmountRequiredBase = readAnchorNumberLike(
+              account.accepterAmountRequired,
+              creatorAmountBase
+            );
+            const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
+            const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
 
-          const creatorAmountBase = readAnchorNumberLike(account.creatorAmount, 0);
-          const accepterAmountRequiredBase = readAnchorNumberLike(
-            account.accepterAmountRequired,
-            creatorAmountBase
-          );
-          const accepterAmountBase = readAnchorNumberLike(account.accepterAmount, 0);
-          const expiryTs = readAnchorNumberLike(account.expiryTs, 0);
-
-          return {
-            pubkey: typedItem.publicKey.toBase58(),
-            creator: readAnchorPubkeyLike(account.creator),
-            accepter: readAnchorPubkeyLike(account.accepter),
-            mint: readAnchorPubkeyLike(account.mint),
-            creatorAmountUi: creatorAmountBase / 1_000_000,
-            accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
-            accepterAmountUi: accepterAmountBase / 1_000_000,
-            expiryTs,
-            state: getStateLabel(account.state),
-            creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
-            accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
-            winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
-            betId:
-              account.betId && typeof account.betId.toString === 'function'
-                ? account.betId.toString()
-                : '0',
-          };
+            return [
+              {
+                pubkey: item.pubkey.toBase58(),
+                creator: readAnchorPubkeyLike(account.creator),
+                accepter: readAnchorPubkeyLike(account.accepter),
+                mint: readAnchorPubkeyLike(account.mint),
+                creatorAmountUi: creatorAmountBase / 1_000_000,
+                accepterAmountRequiredUi: accepterAmountRequiredBase / 1_000_000,
+                accepterAmountUi: accepterAmountBase / 1_000_000,
+                expiryTs,
+                state: getStateLabel(account.state),
+                creatorSide: typeof account.creatorSide === 'number' ? account.creatorSide : 0,
+                accepterSide: typeof account.accepterSide === 'number' ? account.accepterSide : 0,
+                winnerSide: typeof account.winnerSide === 'number' ? account.winnerSide : 0,
+                betId:
+                  account.betId && typeof account.betId.toString === 'function'
+                    ? account.betId.toString()
+                    : '0',
+              },
+            ];
+          } catch {
+            return [];
+          }
         })
         .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
         .sort((a, b) => b.expiryTs - a.expiryTs);
