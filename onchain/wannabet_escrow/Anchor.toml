@@ -5,7 +5,10 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-wannabet_escrow = "Dp2U48v9tF2PwUVeg92tGSwxgC2r85XddpB7Ts5BBcPH"
+wannabet_escrow = "36r1hGZPxnwoJRuDQ7Qqf5ndx2FHLRKcQ3iFivkoxZ2L"
+
+[programs.devnet]
+wannabet_escrow = "36r1hGZPxnwoJRuDQ7Qqf5ndx2FHLRKcQ3iFivkoxZ2L"
 
 [registry]
 url = "https://api.apr.dev"

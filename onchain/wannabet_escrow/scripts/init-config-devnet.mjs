@@ -6,6 +6,8 @@ import path from "path";
 
 const rpcUrl = "https://api.devnet.solana.com";
 const walletPath = path.join(os.homedir(), ".config/solana/id.json");
+const idlPath = path.resolve("target/idl/wannabet_escrow.json");
+
 const secret = JSON.parse(fs.readFileSync(walletPath, "utf8"));
 const walletKeypair = Keypair.fromSecretKey(Uint8Array.from(secret));
 
@@ -16,15 +18,9 @@ const provider = new anchor.AnchorProvider(connection, wallet, {
 });
 anchor.setProvider(provider);
 
-const idl = JSON.parse(
-  fs.readFileSync(
-    "/workspaces/wannabet/onchain/wannabet_escrow/target/idl/wannabet_escrow.json",
-    "utf8"
-  )
-);
-
-const programId = new PublicKey("H1fMNM3LC2Ljy6auyBVzeTvE2aeG4CTDRhpm6crn5bVW");
+const idl = JSON.parse(fs.readFileSync(idlPath, "utf8"));
 const program = new anchor.Program(idl, provider);
+const programId = program.programId;
 
 const [configPda] = PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
