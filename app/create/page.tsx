@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
@@ -139,16 +139,16 @@ export default function CreatePage() {
   const [creatorStake, setCreatorStake] = useState("100");
   const [opponentStake, setOpponentStake] = useState("100");
 
-  const [customExpiryIso, setCustomExpiryIso] = useState(() =>
-    setUtcMinutesFromNow(60, false)
-  );
-
-  const [thresholdSettlementIso, setThresholdSettlementIso] = useState(() =>
-    setUtcMinutesFromNow(15, true)
-  );
+  const [customExpiryIso, setCustomExpiryIso] = useState("");
+  const [thresholdSettlementIso, setThresholdSettlementIso] = useState("");
   const [thresholdDirection, setThresholdDirection] =
     useState<ThresholdDirection>("ABOVE_OR_EQUAL");
   const [thresholdStrike, setThresholdStrike] = useState("100000");
+
+  useEffect(() => {
+    setCustomExpiryIso(setUtcMinutesFromNow(60, false));
+    setThresholdSettlementIso(setUtcMinutesFromNow(15, true));
+  }, []);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
