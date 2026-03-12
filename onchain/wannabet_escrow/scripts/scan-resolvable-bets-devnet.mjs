@@ -121,7 +121,7 @@ for (const { pubkey } of rawAccounts) {
       bet.priceSymbol === "btcUsdt" &&
       bet.priceVenue === "binanceSpot" &&
       bet.settlementMinuteTs > 0 &&
-      bet.settlementMinuteTs <= nowTs;
+      bet.settlementMinuteTs + 60 <= nowTs;
 
     if (isCandidate) {
       candidates.push(bet);
