@@ -19,3 +19,5 @@ id.json
 onchain/wannabet_escrow/.git_backup_do_not_use
 solana-install.sh
 tsconfig.tsbuildinfo
+
+/lib/generated/prisma

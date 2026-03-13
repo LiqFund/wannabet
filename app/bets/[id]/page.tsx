@@ -9,6 +9,7 @@ import {
   WANNABET_ESCROW_PROGRAM_ID,
   WANNABET_DEVNET_TEST_MINT
 } from '@/lib/solana';
+import { getBetSportsEventLink } from '@/lib/server/sports/repository/getBetSportsEventLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -317,6 +318,7 @@ export default async function BetDetailPage({
   params: { id: string };
 }) {
   const bet = await getRealBet(params.id);
+  const linkedSportsEvent = await getBetSportsEventLink(params.id);
 
   if (!bet) {
     notFound();
@@ -409,6 +411,13 @@ export default async function BetDetailPage({
             <li>Total pot: {formatUSDC(totalPot)}</li>
             <li>Stake ratio: {stakeRatio}</li>
             <li>Matched: {isMatched ? 'Yes' : 'No'}</li>
+            {linkedSportsEvent ? (
+              <>
+                <li>Linked sports event: {linkedSportsEvent.awayTeamName} vs {linkedSportsEvent.homeTeamName}</li>
+                <li>Sports event start: {formatDateUtc(linkedSportsEvent.scheduledStartUtc)}</li>
+                <li>Sports provider event id: {linkedSportsEvent.providerEventId}</li>
+              </>
+            ) : null}
             <li>Internal bet id: {bet.betId}</li>
             <li>Mint: {bet.mint}</li>
           </ul>
@@ -437,7 +446,15 @@ export default async function BetDetailPage({
             </ul>
           ) : (
             <ul className="mt-3 space-y-2 text-sm text-white/80">
-              <li>Expires: {formatUtcTimestamp(bet.expiryTs)}</li>
+              {linkedSportsEvent ? (
+                <>
+                  <li>Linked event controls the real sports lifecycle: Yes</li>
+                  <li>Event start: {formatDateUtc(linkedSportsEvent.scheduledStartUtc)}</li>
+                  <li>Manual expiry field from current on-chain custom path: {formatUtcTimestamp(bet.expiryTs)}</li>
+                </>
+              ) : (
+                <li>Expires: {formatUtcTimestamp(bet.expiryTs)}</li>
+              )}
               <li>
                 Resolved at:{' '}
                 {bet.resolvedAtTs > 0

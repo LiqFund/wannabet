@@ -1326,6 +1326,138 @@
       ]
     },
     {
+      "name": "create_bet_sports_metadata",
+      "discriminator": [
+        86,
+        132,
+        201,
+        38,
+        92,
+        136,
+        225,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "bet",
+          "writable": true
+        },
+        {
+          "name": "bet_sports_metadata",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  101,
+                  116,
+                  95,
+                  115,
+                  112,
+                  111,
+                  114,
+                  116,
+                  115,
+                  95,
+                  109,
+                  101,
+                  116,
+                  97,
+                  100,
+                  97,
+                  116,
+                  97
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "bet"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "provider",
+          "type": {
+            "defined": {
+              "name": "SportsProvider"
+            }
+          }
+        },
+        {
+          "name": "sport",
+          "type": {
+            "defined": {
+              "name": "Sport"
+            }
+          }
+        },
+        {
+          "name": "league",
+          "type": {
+            "defined": {
+              "name": "League"
+            }
+          }
+        },
+        {
+          "name": "market_type",
+          "type": {
+            "defined": {
+              "name": "SportsMarketType"
+            }
+          }
+        },
+        {
+          "name": "provider_event_id",
+          "type": "u64"
+        },
+        {
+          "name": "home_team_id",
+          "type": "u64"
+        },
+        {
+          "name": "away_team_id",
+          "type": "u64"
+        },
+        {
+          "name": "event_start_ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "create_crypto_price_bet",
       "discriminator": [
         29,
@@ -1997,6 +2129,19 @@
       ]
     },
     {
+      "name": "BetSportsMetadata",
+      "discriminator": [
+        37,
+        190,
+        247,
+        149,
+        156,
+        12,
+        158,
+        32
+      ]
+    },
+    {
       "name": "Config",
       "discriminator": [
         155,
@@ -2155,6 +2300,11 @@
       "code": 6028,
       "name": "ManualResolveDisabledForPriceMarket",
       "msg": "Manual resolution is disabled for crypto price markets"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidSportsMetadata",
+      "msg": "Invalid sports metadata"
     }
   ],
   "types": [
@@ -2295,6 +2445,70 @@
       }
     },
     {
+      "name": "BetSportsMetadata",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bet",
+            "type": "pubkey"
+          },
+          {
+            "name": "provider",
+            "type": {
+              "defined": {
+                "name": "SportsProvider"
+              }
+            }
+          },
+          {
+            "name": "sport",
+            "type": {
+              "defined": {
+                "name": "Sport"
+              }
+            }
+          },
+          {
+            "name": "league",
+            "type": {
+              "defined": {
+                "name": "League"
+              }
+            }
+          },
+          {
+            "name": "market_type",
+            "type": {
+              "defined": {
+                "name": "SportsMarketType"
+              }
+            }
+          },
+          {
+            "name": "provider_event_id",
+            "type": "u64"
+          },
+          {
+            "name": "home_team_id",
+            "type": "u64"
+          },
+          {
+            "name": "away_team_id",
+            "type": "u64"
+          },
+          {
+            "name": "event_start_ts",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "BetState",
       "type": {
         "kind": "enum",
@@ -2356,6 +2570,20 @@
       }
     },
     {
+      "name": "League",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Nba"
+          }
+        ]
+      }
+    },
+    {
       "name": "MarketKind",
       "type": {
         "kind": "enum",
@@ -2410,6 +2638,48 @@
           },
           {
             "name": "Voided"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Sport",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "Basketball"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SportsMarketType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "HeadToHeadWinner"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SportsProvider",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Unknown"
+          },
+          {
+            "name": "SportsDataIo"
           }
         ]
       }

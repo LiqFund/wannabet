@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { Connection, Keypair } from '@solana/web3.js';
 import idl from '@/lib/idl/wannabet_escrow.json';
 import { formatUSDC, shortAddress } from '@/lib/format';
+import { listBetSportsEventLinks } from '@/lib/server/sports/repository/listBetSportsEventLinks';
+import { getLeagueLabel, getSportsMarketTypeLabel } from '@/lib/sports/labels';
 import { SOLANA_RPC_URL, WANNABET_ESCROW_PROGRAM_ID, WANNABET_DEVNET_TEST_MINT } from '@/lib/solana';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +27,13 @@ type RealBet = {
   accepterSide: number;
   winnerSide: number;
   betId: string;
+  sportsMetadata: {
+    league: string;
+    marketType: string;
+    providerEventId: string;
+    eventStartTs: number;
+    matchup: string | null;
+  } | null;
 };
 
 function getStateLabel(state: Record<string, unknown>) {
@@ -73,7 +82,65 @@ async function getRealBets(): Promise<RealBet[]> {
     provider
   );
 
-  const accounts = await (program.account as unknown as { bet: { all: () => Promise<unknown[]> } }).bet.all();
+  const typedProgram = program.account as unknown as {
+    bet: { all: () => Promise<unknown[]> };
+    betSportsMetadata: { all: () => Promise<unknown[]> };
+  };
+
+  const accounts = await typedProgram.bet.all();
+  const sportsMetadataAccounts = await typedProgram.betSportsMetadata.all();
+
+  const sportsEventLinks = await listBetSportsEventLinks(
+    accounts.map((item) => {
+      const typedItem = item as {
+        publicKey: { toBase58: () => string };
+      };
+
+      return typedItem.publicKey.toBase58();
+    })
+  );
+
+  const sportsEventLinksByBetPubkey = new Map(
+    sportsEventLinks.map((link) => [
+      link.betPubkey,
+      `${link.awayTeamName} vs ${link.homeTeamName}`
+    ] as const)
+  );
+
+  const sportsMetadataByBetPubkey = new Map(
+    sportsMetadataAccounts.map((item) => {
+      const typedItem = item as {
+        publicKey: { toBase58: () => string };
+        account: Record<string, unknown>;
+      };
+
+      const account = typedItem.account as Record<string, unknown> & {
+        bet: { toBase58: () => string };
+        league: Record<string, unknown>;
+        marketType: Record<string, unknown>;
+        providerEventId: { toString: () => string };
+        eventStartTs: { toNumber?: () => number; toString: () => string };
+      };
+
+      const betPubkey = account.bet.toBase58();
+
+      const eventStartTs =
+        typeof account.eventStartTs?.toNumber === 'function'
+          ? account.eventStartTs.toNumber()
+          : Number(account.eventStartTs.toString());
+
+      return [
+        betPubkey,
+        {
+          league: getLeagueLabel(account.league),
+          marketType: getSportsMarketTypeLabel(account.marketType),
+          providerEventId: account.providerEventId.toString(),
+          eventStartTs,
+          matchup: sportsEventLinksByBetPubkey.get(betPubkey) ?? null
+        }
+      ] as const;
+    })
+  );
 
   return accounts
     .map((item) => {
@@ -111,8 +178,10 @@ async function getRealBets(): Promise<RealBet[]> {
           ? account.expiryTs.toNumber()
           : Number(account.expiryTs.toString());
 
+      const pubkey = typedItem.publicKey.toBase58();
+
       return {
-        pubkey: typedItem.publicKey.toBase58(),
+        pubkey,
         creator: account.creator.toBase58(),
         accepter: account.accepter.toBase58(),
         mint: account.mint.toBase58(),
@@ -123,7 +192,8 @@ async function getRealBets(): Promise<RealBet[]> {
         creatorSide: account.creatorSide,
         accepterSide: account.accepterSide,
         winnerSide: account.winnerSide,
-        betId: account.betId.toString()
+        betId: account.betId.toString(),
+        sportsMetadata: sportsMetadataByBetPubkey.get(pubkey) ?? null
       };
     })
     .filter((bet) => bet.mint === WANNABET_DEVNET_TEST_MINT.toBase58())
@@ -145,6 +215,8 @@ export default async function BetsPage() {
         ? 'rounded-md border border-amber-500/40 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-amber-200'
         : 'rounded-md border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-200';
 
+    const isSportsLinked = Boolean(bet.sportsMetadata);
+
     return (
       <article
         key={bet.pubkey}
@@ -152,11 +224,32 @@ export default async function BetsPage() {
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/45">Bet account</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-white/45">
+              {isSportsLinked ? 'Sports-linked bet' : 'Bet account'}
+            </p>
             <h2 className="mt-1 text-lg font-bold text-white">{shortAddress(bet.pubkey)}</h2>
           </div>
           <span className={badgeClass}>{bet.state}</span>
         </div>
+
+        {bet.sportsMetadata ? (
+          <div className="mt-4 rounded-lg border border-neon/30 bg-neon/10 px-3 py-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-neon/80">
+              {bet.sportsMetadata.league} · {bet.sportsMetadata.marketType}
+            </div>
+            {bet.sportsMetadata.matchup ? (
+              <div className="mt-2 text-sm font-semibold text-white">
+                {bet.sportsMetadata.matchup}
+              </div>
+            ) : null}
+            <div className="mt-2 text-xs text-white/70">
+              Event start: {new Date(bet.sportsMetadata.eventStartTs * 1000).toISOString().replace('T', ' ').replace('.000Z', ' UTC')}
+            </div>
+            <div className="mt-1 text-xs text-white/55">
+              Provider event id: {bet.sportsMetadata.providerEventId}
+            </div>
+          </div>
+        ) : null}
 
         <p className="mt-4 text-3xl font-black text-white">{formatUSDC(totalPot)}</p>
         <p className="mt-2 text-sm text-white/75">Creator {shortAddress(bet.creator)}</p>
@@ -165,7 +258,11 @@ export default async function BetsPage() {
         <div className="mt-4 space-y-2 text-sm text-white/80">
           <p>Creator escrow: {formatUSDC(bet.creatorAmountUi)}</p>
           <p>Taker escrow: {formatUSDC(bet.accepterAmountUi)}</p>
-          <p>Time remaining: {formatRemaining(bet.expiryTs)}</p>
+          <p>
+            {bet.sportsMetadata
+              ? 'Legacy custom expiry: ' + formatRemaining(bet.expiryTs)
+              : 'Time remaining: ' + formatRemaining(bet.expiryTs)}
+          </p>
         </div>
 
         <Link

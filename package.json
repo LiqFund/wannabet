@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/wallet-adapter-base": "^0.9.27",
     "@solana/wallet-adapter-react": "^0.15.39",
@@ -21,6 +23,8 @@
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "next": "14.2.32",
+    "pg": "^8.20.0",
+    "prisma": "^7.5.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

@@ -16,6 +16,7 @@ import {
   WANNABET_DEVNET_TEST_MINT,
   WANNABET_ESCROW_PROGRAM_ID,
 } from "@/lib/solana";
+import type { UpcomingNbaEvent, UpcomingNbaEventsResponse } from "@/lib/sports/upcomingNba";
 
 type CreateMode = "CUSTOM" | "BTC_THRESHOLD";
 type ThresholdDirection = "ABOVE_OR_EQUAL" | "BELOW";
@@ -150,9 +151,61 @@ export default function CreatePage() {
     setThresholdSettlementIso(setUtcMinutesFromNow(15, true));
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadUpcomingNbaEvents() {
+      setIsLoadingUpcomingNbaEvents(true);
+      setUpcomingNbaEventsError("");
+
+      try {
+        const res = await fetch("/api/sports/nba/upcoming", {
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load upcoming NBA events.");
+        }
+
+        const data = (await res.json()) as UpcomingNbaEventsResponse;
+
+        if (!cancelled) {
+          setUpcomingNbaEvents(data.events);
+          setSelectedUpcomingNbaEventId((current) =>
+            current && data.events.some((event) => event.id === current)
+              ? current
+              : data.events[0]?.id ?? null
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setUpcomingNbaEvents([]);
+          setUpcomingNbaEventsError(
+            error instanceof Error ? error.message : "Failed to load upcoming NBA events."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingUpcomingNbaEvents(false);
+        }
+      }
+    }
+
+    void loadUpcomingNbaEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [createdBetPubkey, setCreatedBetPubkey] = useState<string | null>(null);
+
+  const [upcomingNbaEvents, setUpcomingNbaEvents] = useState<UpcomingNbaEvent[]>([]);
+  const [selectedUpcomingNbaEventId, setSelectedUpcomingNbaEventId] = useState<string | null>(null);
+  const [isLoadingUpcomingNbaEvents, setIsLoadingUpcomingNbaEvents] = useState(false);
+  const [upcomingNbaEventsError, setUpcomingNbaEventsError] = useState("");
 
   const connectedWallet =
     publicKey && wallet && signTransaction && signAllTransactions
@@ -179,10 +232,25 @@ export default function CreatePage() {
   const thresholdSettlementTs = parseUtcIsoToSeconds(thresholdSettlementIso);
   const thresholdStrikeE8 = parsePriceToE8(thresholdStrike);
 
+  const selectedUpcomingNbaEvent =
+    upcomingNbaEvents.find((event) => event.id === selectedUpcomingNbaEventId) ?? null;
+
   const previewRows =
     mode === "CUSTOM"
       ? [
           ["Mode", "Custom escrow bet"],
+          [
+            "Selected NBA event",
+            selectedUpcomingNbaEvent
+              ? `${selectedUpcomingNbaEvent.awayTeamName} vs ${selectedUpcomingNbaEvent.homeTeamName}`
+              : "Not selected",
+          ],
+          [
+            "Event start",
+            selectedUpcomingNbaEvent
+              ? selectedUpcomingNbaEvent.scheduledStartUtc.replace("T", " ").replace(".000Z", " UTC")
+              : "Not selected",
+          ],
           ["Your escrow", formatUSDC(makerAmountBaseUnits / 1_000_000)],
           ["Opponent required", formatUSDC(opponentAmountBaseUnits / 1_000_000)],
           [
@@ -293,6 +361,83 @@ export default function CreatePage() {
             systemProgram: SystemProgram.programId,
           })
           .rpc();
+
+        if (selectedUpcomingNbaEvent) {
+          const [betSportsMetadataPda] = PublicKey.findProgramAddressSync(
+            [Buffer.from("bet_sports_metadata"), betPda.toBuffer()],
+            WANNABET_ESCROW_PROGRAM_ID
+          );
+
+          const providerEventId = Number(selectedUpcomingNbaEvent.providerEventId);
+          const homeTeamId = Number(selectedUpcomingNbaEvent.homeTeamId);
+          const awayTeamId = Number(selectedUpcomingNbaEvent.awayTeamId);
+          const eventStartTs = parseUtcIsoToSeconds(selectedUpcomingNbaEvent.scheduledStartUtc);
+
+          if (
+            !Number.isFinite(providerEventId) ||
+            !Number.isFinite(homeTeamId) ||
+            !Number.isFinite(awayTeamId) ||
+            eventStartTs <= 0
+          ) {
+            throw new Error("Selected NBA event metadata is invalid.");
+          }
+
+          await (
+            program.methods as unknown as {
+              createBetSportsMetadata: (
+                provider: { sportsDataIo: Record<string, never> },
+                sport: { basketball: Record<string, never> },
+                league: { nba: Record<string, never> },
+                marketType: { headToHeadWinner: Record<string, never> },
+                providerEventId: BN,
+                homeTeamId: BN,
+                awayTeamId: BN,
+                eventStartTs: BN
+              ) => {
+                accounts: (args: {
+                  creator: PublicKey;
+                  config: PublicKey;
+                  bet: PublicKey;
+                  betSportsMetadata: PublicKey;
+                  systemProgram: PublicKey;
+                }) => { rpc: () => Promise<string> };
+              };
+            }
+          )
+            .createBetSportsMetadata(
+              { sportsDataIo: {} },
+              { basketball: {} },
+              { nba: {} },
+              { headToHeadWinner: {} },
+              new BN(providerEventId),
+              new BN(homeTeamId),
+              new BN(awayTeamId),
+              new BN(eventStartTs)
+            )
+            .accounts({
+              creator: connectedWallet.publicKey,
+              config: configPda,
+              bet: betPda,
+              betSportsMetadata: betSportsMetadataPda,
+              systemProgram: SystemProgram.programId,
+            })
+            .rpc();
+
+          const linkRes = await fetch("/api/bets/link-sports-event", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              betPubkey: betPda.toBase58(),
+              event: selectedUpcomingNbaEvent,
+            }),
+          });
+
+          if (!linkRes.ok) {
+            throw new Error("Bet was created, but saving the selected NBA event link failed.");
+          }
+        }
       } else {
         if (!Number.isFinite(thresholdSettlementTs) || thresholdSettlementTs <= 0) {
           setSubmitError("Choose a valid BTC settlement minute.");
@@ -413,6 +558,67 @@ export default function CreatePage() {
                 body="Real supported automated market. Binance Spot. 1-minute candle close at the selected settlement minute."
                 onClick={() => setMode("BTC_THRESHOLD")}
               />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-white">
+                  Upcoming NBA events
+                </div>
+                <div className="mt-1 text-xs text-white/55">
+                  Loaded from WannaBet&apos;s internal sports event catalogue.
+                </div>
+              </div>
+              {isLoadingUpcomingNbaEvents ? (
+                <div className="text-xs text-white/50">Loading...</div>
+              ) : null}
+            </div>
+
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100/85">
+              NBA event selection is preview-only right now. Create bet still submits the existing generic on-chain custom escrow flow.
+            </div>
+
+            {upcomingNbaEventsError ? (
+              <div className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                {upcomingNbaEventsError}
+              </div>
+            ) : null}
+
+            <div className="mt-3 space-y-2">
+              {upcomingNbaEvents.slice(0, 5).map((event) => {
+                const isSelected = event.id === selectedUpcomingNbaEventId;
+
+                return (
+                  <button
+                    key={event.id}
+                    type="button"
+                    onClick={() => setSelectedUpcomingNbaEventId(event.id)}
+                    className={clsx(
+                      "w-full rounded-lg border px-3 py-3 text-left transition",
+                      isSelected
+                        ? "border-neon/40 bg-neon/10"
+                        : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                    )}
+                  >
+                    <div className="text-sm font-semibold text-white">
+                      {event.awayTeamName} vs {event.homeTeamName}
+                    </div>
+                    <div className="mt-1 text-xs text-white/60">
+                      {event.scheduledStartUtc.replace("T", " ").replace(".000Z", " UTC")}
+                    </div>
+                  </button>
+                );
+              })}
+
+              {!isLoadingUpcomingNbaEvents &&
+              !upcomingNbaEventsError &&
+              upcomingNbaEvents.length === 0 ? (
+                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60">
+                  No upcoming NBA events found.
+                </div>
+              ) : null}
             </div>
           </div>
 

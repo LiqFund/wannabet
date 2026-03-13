@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SportsEventStatus {
+  SCHEDULED
+  IN_PROGRESS
+  FINAL
+  POSTPONED
+  CANCELED
+  DELAYED
+  SUSPENDED
+  UNKNOWN
+}
+
+model SportsEvent {
+  id                   String            @id @default(cuid())
+  provider             String
+  providerEventId      String
+  sport                String
+  league               String
+
+  homeTeamId           String
+  awayTeamId           String
+  homeTeamCode         String?
+  awayTeamCode         String?
+  homeTeamName         String
+  awayTeamName         String
+
+  scheduledStartUtc    DateTime
+  status               SportsEventStatus @default(SCHEDULED)
+  finalConfirmed       Boolean           @default(false)
+
+  winnerTeamId         String?
+
+  homeScore            Int?
+  awayScore            Int?
+
+  season               Int?
+  seasonType           Int?
+  eventDayUtc          DateTime?
+
+  updatedAtProviderUtc DateTime?
+
+  rawJson              Json
+
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@unique([provider, providerEventId])
+  @@index([sport, league, scheduledStartUtc])
+  @@index([status, scheduledStartUtc])
+}
+
+model BetSportsEventLink {
+  id                String   @id @default(cuid())
+  betPubkey         String   @unique
+
+  provider          String
+  providerEventId   String
+  sport             String
+  league            String
+
+  awayTeamName      String
+  homeTeamName      String
+  scheduledStartUtc DateTime
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([sport, league, scheduledStartUtc])
+  @@index([provider, providerEventId])
+}

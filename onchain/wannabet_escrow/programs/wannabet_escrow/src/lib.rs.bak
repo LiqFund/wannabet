@@ -7,7 +7,6 @@ declare_id!("36r1hGZPxnwoJRuDQ7Qqf5ndx2FHLRKcQ3iFivkoxZ2L");
 const CONFIG_SEED: &[u8] = b"config";
 const BET_SEED: &[u8] = b"bet";
 const ESCROW_SEED: &[u8] = b"escrow";
-const BET_SPORTS_METADATA_SEED: &[u8] = b"bet_sports_metadata";
 const BPS_DENOMINATOR: u64 = 10_000;
 const MAX_ODDS_RATIO: u64 = 100;
 
@@ -75,10 +74,7 @@ fn validate_supported_crypto_price_bet(bet: &Bet) -> Result<()> {
         bet.price_venue == PriceVenue::BinanceSpot,
         ErrorCode::UnsupportedPriceMarket
     );
-    require!(
-        bet.comparator != Comparator::Unknown,
-        ErrorCode::InvalidComparator
-    );
+    require!(bet.comparator != Comparator::Unknown, ErrorCode::InvalidComparator);
     require!(bet.strike_e8 > 0, ErrorCode::InvalidStrike);
     Ok(())
 }
@@ -243,10 +239,7 @@ pub mod wannabet_escrow {
 
         let now = Clock::get()?.unix_timestamp;
         validate_settlement_minute_ts(settlement_minute_ts, now)?;
-        require!(
-            comparator != Comparator::Unknown,
-            ErrorCode::InvalidComparator
-        );
+        require!(comparator != Comparator::Unknown, ErrorCode::InvalidComparator);
         require!(strike_e8 > 0, ErrorCode::InvalidStrike);
 
         let bet = &mut ctx.accounts.bet;
@@ -516,56 +509,6 @@ pub mod wannabet_escrow {
 
         Ok(())
     }
-
-    pub fn create_bet_sports_metadata(
-        ctx: Context<CreateBetSportsMetadata>,
-        provider: SportsProvider,
-        sport: Sport,
-        league: League,
-        market_type: SportsMarketType,
-        provider_event_id: u64,
-        home_team_id: u64,
-        away_team_id: u64,
-        event_start_ts: i64,
-    ) -> Result<()> {
-        require!(!ctx.accounts.config.paused, ErrorCode::ProgramPaused);
-        require!(
-            ctx.accounts.bet.market_kind == MarketKind::Custom,
-            ErrorCode::InvalidBetState
-        );
-        require!(
-            provider != SportsProvider::Unknown,
-            ErrorCode::InvalidSportsMetadata
-        );
-        require!(sport != Sport::Unknown, ErrorCode::InvalidSportsMetadata);
-        require!(league != League::Unknown, ErrorCode::InvalidSportsMetadata);
-        require!(
-            market_type != SportsMarketType::Unknown,
-            ErrorCode::InvalidSportsMetadata
-        );
-        require!(provider_event_id > 0, ErrorCode::InvalidSportsMetadata);
-        require!(home_team_id > 0, ErrorCode::InvalidSportsMetadata);
-        require!(away_team_id > 0, ErrorCode::InvalidSportsMetadata);
-        require!(
-            home_team_id != away_team_id,
-            ErrorCode::InvalidSportsMetadata
-        );
-        require!(event_start_ts > 0, ErrorCode::InvalidSportsMetadata);
-
-        let metadata = &mut ctx.accounts.bet_sports_metadata;
-        metadata.bet = ctx.accounts.bet.key();
-        metadata.provider = provider;
-        metadata.sport = sport;
-        metadata.league = league;
-        metadata.market_type = market_type;
-        metadata.provider_event_id = provider_event_id;
-        metadata.home_team_id = home_team_id;
-        metadata.away_team_id = away_team_id;
-        metadata.event_start_ts = event_start_ts;
-        metadata.bump = ctx.bumps.bet_sports_metadata;
-
-        Ok(())
-    }
 }
 
 #[derive(Accounts)]
@@ -755,25 +698,6 @@ pub struct ResolveBet<'info> {
 }
 
 #[derive(Accounts)]
-pub struct CreateBetSportsMetadata<'info> {
-    #[account(mut, address = bet.creator @ ErrorCode::UnauthorizedCreator)]
-    pub creator: Signer<'info>,
-    #[account(seeds = [CONFIG_SEED], bump)]
-    pub config: Account<'info, Config>,
-    #[account(mut)]
-    pub bet: Account<'info, Bet>,
-    #[account(
-        init,
-        payer = creator,
-        space = 8 + BetSportsMetadata::INIT_SPACE,
-        seeds = [BET_SPORTS_METADATA_SEED, bet.key().as_ref()],
-        bump,
-    )]
-    pub bet_sports_metadata: Account<'info, BetSportsMetadata>,
-    pub system_program: Program<'info, System>,
-}
-
-#[derive(Accounts)]
 pub struct ClaimWinnings<'info> {
     #[account(mut)]
     pub claimant: Signer<'info>,
@@ -911,30 +835,6 @@ pub enum ResolutionStatus {
     Voided,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum SportsProvider {
-    Unknown,
-    SportsDataIo,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum Sport {
-    Unknown,
-    Basketball,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum League {
-    Unknown,
-    Nba,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, InitSpace)]
-pub enum SportsMarketType {
-    Unknown,
-    HeadToHeadWinner,
-}
-
 #[account]
 #[derive(InitSpace)]
 pub struct Bet {
@@ -972,21 +872,6 @@ pub enum BetState {
     Locked,
     Resolved,
     Cancelled,
-}
-
-#[account]
-#[derive(InitSpace)]
-pub struct BetSportsMetadata {
-    pub bet: Pubkey,
-    pub provider: SportsProvider,
-    pub sport: Sport,
-    pub league: League,
-    pub market_type: SportsMarketType,
-    pub provider_event_id: u64,
-    pub home_team_id: u64,
-    pub away_team_id: u64,
-    pub event_start_ts: i64,
-    pub bump: u8,
 }
 
 #[error_code]
@@ -1049,6 +934,4 @@ pub enum ErrorCode {
     UnsupportedPriceMarket,
     #[msg("Manual resolution is disabled for crypto price markets")]
     ManualResolveDisabledForPriceMarket,
-    #[msg("Invalid sports metadata")]
-    InvalidSportsMetadata,
 }
